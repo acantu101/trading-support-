@@ -1,8 +1,6 @@
-# trading-support-
-trading support scenarios
-# 🏦  Support Engineer Challenge Lab
+# ⚙️ Support Engineer Challenge Lab
 
-A self-contained Linux lab environment that simulates real trading infrastructure failures for **support engineering interview preparation** — modelled on the style of 's technical challenge scenarios.
+A self-contained Linux lab environment that simulates real trading infrastructure failures for **support engineering interview preparation**. Includes an interactive browser-based challenge guide covering Linux, Networking, Python, Kafka, FIX Protocol, Kubernetes, SQL, Airflow, and more.
 
 > Spin up realistic broken environments, triage them with real Linux tools, and tear everything down cleanly when you're done.
 
@@ -10,10 +8,11 @@ A self-contained Linux lab environment that simulates real trading infrastructur
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
+- [What's Included](#whats-included)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
-- [Usage](#usage)
+- [The Interactive Lab (HTML)](#the-interactive-lab-html)
+- [The Lab Setup Script (Python)](#the-lab-setup-script-python)
 - [Scenarios](#scenarios)
 - [Directory Structure](#directory-structure)
 - [Command Reference](#command-reference)
@@ -22,17 +21,12 @@ A self-contained Linux lab environment that simulates real trading infrastructur
 
 ---
 
-## Overview
+## What's Included
 
-Each scenario launches real background processes and populates a fake trading file system under `/tmp/_lab/`. You get a structured task list to work through using standard Linux tools — exactly the kind of environment you'd face in a support engineering assessment.
-
-**What you practice:**
-
-- Finding and killing hung processes (`pgrep`, `kill`, `ps`)
-- Diagnosing CPU and memory spikes (`top`, `vmstat`, `/proc`)
-- Identifying and reaping zombie processes
-- Tracing runaway log writers with `lsof` and `fuser`
-- Triaging multiple simultaneous incidents by priority
+| File | Purpose |
+|------|---------|
+| `challenge-lab.html` | Interactive browser guide — 60+ challenges across 12 categories with hints, solutions, and progress tracking |
+| `lab_setup.py` | Python script that spawns real broken processes on your Linux machine to practice against |
 
 ---
 
@@ -40,10 +34,11 @@ Each scenario launches real background processes and populates a fake trading fi
 
 - Linux or macOS (tested on Ubuntu 20.04+)
 - Python 3.7+
+- A modern browser (for the HTML lab)
 - Standard Unix utilities: `ps`, `pgrep`, `kill`, `top`, `lsof`, `du`, `df`
 - Optional but recommended: `htop`, `stress`
 
-No third-party Python packages required. `setproctitle` is used opportunistically if installed (improves process naming in `ps` output):
+No third-party Python packages required. `setproctitle` is used opportunistically if installed — it improves process naming in `ps` output:
 
 ```bash
 pip install setproctitle   # optional
@@ -54,30 +49,74 @@ pip install setproctitle   # optional
 ## Installation
 
 ```bash
-git clone https://github.com/<your-username>/-lab.git
-cd -lab
-chmod +x _lab_setup.py
+git clone https://github.com/<your-username>/support-engineer-lab.git
+cd support-engineer-lab
+chmod +x lab_setup.py
 ```
 
 ---
 
-## Usage
+## The Interactive Lab (HTML)
+
+Open `challenge-lab.html` in your browser — no server required.
+
+```bash
+# macOS
+open challenge-lab.html
+
+# Linux
+xdg-open challenge-lab.html
+
+# Or just drag the file into your browser
+```
+
+### What's inside
+
+The lab has **12 categories** with **60+ challenges**, each with a realistic scenario, task checklist, optional hints, and a full solution:
+
+| Category | Challenges | Topics |
+|----------|-----------|--------|
+| 🐧 Linux & Systems | 8 | Process management, log analysis, disk/memory |
+| 🌐 Networking | 5 | TCP/IP, DNS, port debugging, packet capture |
+| 🐍 Python & Bash | 6 | Scripting, automation, log parsing |
+| 📈 Trading Scenarios | 4 | Market making, latency, order flow |
+| ☁️ AWS | 4 | EC2, S3, CloudWatch, IAM |
+| 📨 Kafka | 6 | Consumer lag, partition rebalancing, producer issues |
+| 📡 FIX Protocol | 5 | Session management, message types, tag debugging |
+| ⚡ Native / C++ / Perf | 5 | Core dumps, perf profiling, memory layout |
+| 🗄️ SQL | 6 | Query optimisation, slow queries, deadlocks |
+| ☸️ Kubernetes & ArgoCD | 6 | Pod debugging, rolling deployments, CrashLoopBackOff |
+| 🔀 Git & Regression Hunt | 5 | Bisect, blame, reverting bad deploys |
+| 🔄 Airflow & Pipelines | 5 | DAG failures, sensor blocks, SLA misses |
+
+**Features:**
+- ✅ Click-to-check task progress per challenge
+- 💡 Hint system — reveals progressively without spoiling the solution
+- 👁️ Collapsible solutions with syntax-highlighted commands
+- 📊 Per-category progress bars
+- ⌨️ Quick-launch link to an in-browser Linux terminal ([copy.sh/v2](https://copy.sh/v2))
+
+---
+
+## The Lab Setup Script (Python)
+
+`lab_setup.py` creates a realistic fake trading file system under `/tmp/lab/` and spawns real background processes you can practice triaging with actual Linux tools.
 
 ```bash
 # Interactive menu — choose your scenario
-python3 _lab_setup.py
+python3 lab_setup.py
 
 # Launch a specific scenario directly
-python3 _lab_setup.py --scenario 1
+python3 lab_setup.py --scenario 1
 
 # Check what lab processes are currently running
-python3 _lab_setup.py --status
+python3 lab_setup.py --status
 
 # Print the command cheat sheet
-python3 _lab_setup.py --cheatsheet
+python3 lab_setup.py --cheatsheet
 
 # Tear everything down and clean up
-python3 _lab_setup.py --teardown
+python3 lab_setup.py --teardown
 ```
 
 ---
@@ -95,10 +134,6 @@ Launches two `oms_client` processes burning 100% CPU each — simulating a hung 
 3. Kill gracefully (SIGTERM), then forcefully (SIGKILL) if needed
 4. Verify the process is gone
 
-```bash
-python3 _lab_setup.py --scenario 1
-```
-
 ---
 
 ### Scenario 2 — Memory Leak in `mdf_feed_handler`
@@ -108,13 +143,9 @@ Launches a process that allocates ~10 MB of RAM every 300ms and never frees it. 
 
 **Tasks:**
 1. Find the process and its memory footprint
-2. Watch memory grow in real time with `watch` + `ps`
+2. Watch memory grow with `watch` + `ps`
 3. Inspect `/proc/<PID>/status` for VM stats
 4. Terminate the leaking process and confirm memory is reclaimed
-
-```bash
-python3 _lab_setup.py --scenario 2
-```
 
 ---
 
@@ -129,16 +160,12 @@ Launches a parent process that forks 5 children, ignores `SIGCHLD`, and lets the
 3. Understand why zombies exist and what resources they hold
 4. Reap them by killing the parent or sending `SIGCHLD`
 
-```bash
-python3 _lab_setup.py --scenario 3
-```
-
 ---
 
 ### Scenario 4 — Runaway Log File / Disk Pressure
 > *Ops alert: the trading log directory is filling up fast.*
 
-Launches a `fix_engine` process that writes thousands of debug log lines per second to a log file, simulating misconfigured log levels in production.
+Launches a `fix_engine` process that writes thousands of debug log lines per second, simulating misconfigured log levels in production.
 
 **Tasks:**
 1. Check disk usage of the log directory (`du`, `df`)
@@ -147,16 +174,12 @@ Launches a `fix_engine` process that writes thousands of debug log lines per sec
 4. Truncate the log file without deleting it
 5. Verify disk pressure is cleared
 
-```bash
-python3 _lab_setup.py --scenario 4
-```
-
 ---
 
 ### Scenario 5 — Full Incident (All Faults Simultaneously)
 > *Trading desk escalation: OMS down, MD feed lagging, risk engine crashed, disk alert firing.*
 
-Launches all four fault scenarios at once. You must triage by business impact and work through them in priority order — just like a real production incident.
+Launches all four fault scenarios at once. Triage by business impact and work through them in priority order — just like a real production incident.
 
 **Recommended triage order:**
 1. Kill `oms_client` CPU hogs → trading unblocked
@@ -164,22 +187,18 @@ Launches all four fault scenarios at once. You must triage by business impact an
 3. Reap `risk_engine` zombies → PID table cleaned
 4. Stop log spammer + truncate log → disk alert clears
 
-```bash
-python3 _lab_setup.py --scenario 5
-```
-
 ---
 
 ## Directory Structure
 
-The lab creates the following structure under `/tmp/_lab/`:
+The script creates the following structure under `/tmp/lab/`:
 
 ```
-/tmp/_lab/
+/tmp/lab/
 ├── oms/
 │   ├── bin/
 │   ├── config/
-│   │   └── oms.conf              # OMS configuration (host, DB pool, heartbeat)
+│   │   └── oms.conf              # OMS config (host, DB pool, heartbeat)
 │   └── logs/
 │       └── oms.log               # Pre-populated with realistic error entries
 ├── mdf/
@@ -214,7 +233,7 @@ The lab creates the following structure under `/tmp/_lab/`:
 Run the built-in cheat sheet at any time:
 
 ```bash
-python3 _lab_setup.py --cheatsheet
+python3 lab_setup.py --cheatsheet
 ```
 
 | Task | Command |
@@ -253,6 +272,8 @@ python3 _lab_setup.py --cheatsheet
 - You think about business impact when prioritising multiple issues
 - You verify your fix worked rather than assuming
 
+**Pro tip:** Run Scenario 5 (full incident) and practice triaging in priority order. That's exactly what a real on-call engineer would do and it shows structured thinking under pressure.
+
 ---
 
 ## Teardown
@@ -260,10 +281,10 @@ python3 _lab_setup.py --cheatsheet
 All lab processes and files are cleaned up with a single command:
 
 ```bash
-python3 _lab_setup.py --teardown
+python3 lab_setup.py --teardown
 ```
 
-This sends `SIGTERM` then `SIGKILL` to all tracked processes, sweeps for any strays by name, and removes the entire `/tmp/_lab/` directory tree.
+This sends `SIGTERM` then `SIGKILL` to all tracked processes, sweeps for any strays by name, and removes the entire `/tmp/lab/` directory tree.
 
 ---
 
