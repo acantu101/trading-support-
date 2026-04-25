@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """
-DRW Support Engineer Challenge Lab - Environment Setup
-=======================================================
+Support Engineer Challenge Lab - Environment Setup
+===================================================
 Replicates realistic trading infrastructure scenarios for interview prep.
-Run with: python3 drw_lab_setup.py [--scenario N] [--teardown]
+Run with: python3 lab_setup.py [--scenario N] [--teardown]
 
 Scenarios:
   1. Hung OMS client consuming 100% CPU
   2. Memory leak in market data feed handler
   3. Zombie processes from crashed risk engine
-  4. Log directory filling up disk
-  5. FIX engine with runaway child processes
-  6. Deadlocked trade reporting service (all scenarios combined)
+  4. Log directory filling up disk (runaway fix_engine logger)
+  5. Full incident — all faults active simultaneously
 """
 
 import os
@@ -28,7 +27,7 @@ from datetime import datetime
 # ─────────────────────────────────────────────
 #  LAB ROOT DIRECTORY STRUCTURE
 # ─────────────────────────────────────────────
-LAB_ROOT      = Path("/tmp/drw_lab")
+LAB_ROOT      = Path("/tmp/lab")
 DIRS = {
     "oms":        LAB_ROOT / "oms"        / "bin",
     "oms_logs":   LAB_ROOT / "oms"        / "logs",
@@ -68,7 +67,7 @@ def header(msg):
 #  FILESYSTEM SETUP
 # ─────────────────────────────────────────────
 def create_directory_structure():
-    header("Creating DRW Lab Directory Structure")
+    header("Creating Lab Directory Structure")
     for name, path in DIRS.items():
         path.mkdir(parents=True, exist_ok=True)
         ok(f"Created {path}")
@@ -87,7 +86,7 @@ heartbeat_ms    = 500
 reconnect_delay = 5
 
 [database]
-host     = db-primary.drw.internal
+host     = db-primary.trading.internal
 port     = 5432
 name     = oms_prod
 pool_min = 5
@@ -95,7 +94,7 @@ pool_max = 20
 
 [logging]
 level = INFO
-file  = /tmp/drw_lab/oms/logs/oms.log
+file  = /tmp/lab/oms/logs/oms.log
 """)
     ok(f"Written {oms_cfg}")
 
@@ -104,7 +103,7 @@ file  = /tmp/drw_lab/oms/logs/oms.log
     fix_cfg.write_text("""\
 [SESSION]
 BeginString=FIX.4.4
-SenderCompID=DRW_TRADING
+SenderCompID=FIRM_OMS
 TargetCompID=EXCHANGE_A
 HeartBtInt=30
 StartTime=08:00:00
@@ -113,7 +112,7 @@ ResetOnLogon=Y
 
 [SESSION]
 BeginString=FIX.4.4
-SenderCompID=DRW_TRADING
+SenderCompID=FIRM_OMS
 TargetCompID=EXCHANGE_B
 HeartBtInt=30
 StartTime=08:00:00
@@ -156,7 +155,6 @@ def _write_sample_logs():
 
 def _cpu_spin(name: str):
     """Pure CPU burn — simulates a hung oms_client."""
-    # Rename process title if setproctitle is available
     try:
         import setproctitle
         setproctitle.setproctitle(name)
@@ -251,7 +249,7 @@ def launch_scenario_1():
     print("  Suspected: oms_client has hung and is pegging a CPU core.\n")
 
     for i in range(2):   # Launch 2 instances for realism
-        p = multiprocessing.Process(target=_cpu_spin, args=(f"oms_client",), daemon=False)
+        p = multiprocessing.Process(target=_cpu_spin, args=("oms_client",), daemon=False)
         p.start()
         _save_pid(f"oms_client_{i}", p.pid)
         ok(f"oms_client spawned  PID={p.pid}")
@@ -350,7 +348,7 @@ def launch_scenario_3():
 def launch_scenario_4():
     """Log directory filling up disk."""
     header("Scenario 4 — Runaway Log File (Disk Pressure)")
-    print("  Ops is alerted: /tmp/drw_lab/var/log/trading is filling fast.")
+    print(f"  Ops alert: {LAB_ROOT}/fix_engine/logs is filling fast.")
     print("  A fix_engine process is spamming debug logs.\n")
 
     log_path = str(DIRS["fix_logs"] / "fix_engine_debug.log")
@@ -420,7 +418,7 @@ def launch_scenario_5_all():
   # Sort by MEM descending
   ps aux --sort=-%mem | head -15
 
-  # Open file handles across all PIDs
+  # Open file handles across all lab PIDs
   lsof -p $(pgrep -d, 'oms_client|mdf_feed|risk_engine|fix_engine')
 
   # Interactive process explorer
@@ -433,7 +431,7 @@ def launch_scenario_5_all():
 #  TEARDOWN
 # ─────────────────────────────────────────────
 def teardown():
-    header("Tearing Down DRW Lab")
+    header("Tearing Down Lab")
     pids = _load_pids()
     if not pids:
         warn("No PID files found — lab may already be clean")
@@ -492,20 +490,20 @@ def print_cheatsheet():
     header("Quick Reference — Commands You'll Need")
     print(f"""
   {BOLD}FIND PROCESSES{RESET}
-    pgrep -la <name>                     list PIDs + full cmdline
-    ps aux | grep <name>                 snapshot with stats
+    pgrep -la <name>                      list PIDs + full cmdline
+    ps aux | grep <name>                  snapshot with stats
     ps -p <PID> -o pid,ppid,%cpu,%mem,stat,cmd
 
   {BOLD}MONITOR IN REAL TIME{RESET}
-    top -p <PID>                         watch single PID
+    top -p <PID>                          watch single PID
     watch -n 1 'ps -p <PID> -o %cpu,%mem,rss'
-    vmstat 1 5                           system-wide CPU/mem/io
-    iostat 1 5                           disk I/O
+    vmstat 1 5                            system-wide CPU/mem/io
+    iostat 1 5                            disk I/O
 
   {BOLD}MEMORY DEEP DIVE{RESET}
-    cat /proc/<PID>/status | grep -i vm  VmRSS, VmSize, VmPeak
-    cat /proc/<PID>/smaps_rollup         detailed memory map
-    pmap -x <PID>                        memory map
+    cat /proc/<PID>/status | grep -i vm   VmRSS, VmSize, VmPeak
+    cat /proc/<PID>/smaps_rollup          detailed memory map
+    pmap -x <PID>                         memory map
 
   {BOLD}SIGNALS{RESET}
     kill -15 <PID>   SIGTERM   graceful shutdown request
@@ -514,19 +512,19 @@ def print_cheatsheet():
     kill -18 <PID>   SIGCONT   resume a stopped process
 
   {BOLD}ZOMBIE HUNTING{RESET}
-    ps aux | awk '$8=="Z"'               find zombies
+    ps aux | awk '$8=="Z"'                find zombies
     ps -eo pid,ppid,stat,cmd | grep ' Z '
 
   {BOLD}DISK / FILES{RESET}
-    df -h                                disk usage by filesystem
-    du -sh <dir>                         dir size
-    lsof <file>                          who has the file open
-    lsof -p <PID>                        all files a process has open
-    truncate -s 0 <logfile>              zero out without deleting
+    df -h                                 disk usage by filesystem
+    du -sh <dir>                          dir size
+    lsof <file>                           who has the file open
+    lsof -p <PID>                         all files a process has open
+    truncate -s 0 <logfile>               zero out without deleting
 
   {BOLD}PROCESS TREE{RESET}
-    pstree -p <PID>                      visual tree
-    ps auxf                              forest view
+    pstree -p <PID>                       visual tree
+    ps auxf                               forest view
 """)
 
 
@@ -535,7 +533,7 @@ def print_cheatsheet():
 # ─────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(
-        description="DRW Support Engineer Challenge Lab Setup",
+        description="Support Engineer Challenge Lab Setup",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Scenarios:
@@ -584,7 +582,7 @@ Scenarios:
         scenario_map[args.scenario]()
     else:
         # Interactive menu
-        header("DRW Support Challenge Lab")
+        header("Support Engineer Challenge Lab")
         print("  Select a scenario to launch:\n")
         print("    1  Hung oms_client consuming 100% CPU")
         print("    2  Memory leak in mdf_feed_handler")
@@ -603,11 +601,11 @@ Scenarios:
     print(f"""
 {BOLD}{SEPARATOR}{RESET}
 {GREEN}{BOLD}  Lab is running. Work through your tasks above.{RESET}
-  
+
   Useful commands while lab runs:
-    python3 drw_lab_setup.py --status       see running processes
-    python3 drw_lab_setup.py --cheatsheet   command reference
-    python3 drw_lab_setup.py --teardown     clean everything up
+    python3 lab_setup.py --status       see running processes
+    python3 lab_setup.py --cheatsheet   command reference
+    python3 lab_setup.py --teardown     clean everything up
 {BOLD}{SEPARATOR}{RESET}
 """)
 
