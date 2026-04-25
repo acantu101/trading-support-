@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DRW Support Engineer — Challenge Lab</title>
+<title>Support Engineer — Challenge Lab</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
 
@@ -529,7 +529,7 @@
 <body>
 
 <header>
-  <div class="logo">DRW <span>// Support Engineer Challenge Lab</span></div>
+  <div class="logo">⚙ <span>// Support Engineer Challenge Lab</span></div>
   <div class="header-meta">
     Interview: <strong>Wednesday</strong> · Format: Mixed · Duration: <strong>45 min</strong><br>
     Terminal: <strong>copy.sh/v2</strong> — open before starting each challenge
@@ -610,7 +610,7 @@
         <div class="cat-icon" style="background:rgba(240,180,41,0.1)">🐧</div>
         <div>
           <div class="cat-title">Linux & Systems</div>
-          <div class="cat-desc">Process management, log analysis, disk/memory troubleshooting. Core to every DRW support scenario.</div>
+          <div class="cat-desc">Process management, log analysis, disk/memory troubleshooting. Core to every support engineering scenario.</div>
         </div>
         <a class="open-terminal-btn" href="https://copy.sh/v2/" target="_blank">⌨ Open Terminal</a>
       </div>
@@ -619,7 +619,7 @@
         <h3>💡 Interview tip for this section</h3>
         <ul>
           <li>Always narrate your thinking out loud. Say "first I'd check if the process is running with ps aux, then look at resource usage with top" — they're testing your methodology as much as your commands.</li>
-          <li>At DRW, "the system is slow" almost always means a trading process is degraded. Think in terms of latency, not just load.</li>
+          <li>In trading infrastructure, "the system is slow" almost always means a trading process is degraded. Think in terms of latency, not just load.</li>
         </ul>
       </div>
 
@@ -1650,7 +1650,7 @@ URL = <span class="flag">"https://api.coindesk.com/v1/bpi/currentprice.json"</sp
         <h3>💡 Interview tip for this section</h3>
         <ul>
           <li>You don't need to be a trader. But you need to understand the urgency — every second of downtime has a dollar cost.</li>
-          <li>DRW is a market maker. They profit from the spread, not from directional bets. Know what that means.</li>
+          <li>A market maker. They profit from the spread, not from directional bets. Know what that means.</li>
         </ul>
       </div>
 
@@ -1788,7 +1788,7 @@ FIX SESSION DISCONNECT TROUBLESHOOTING:
         </div>
         <div class="challenge-body">
           <div class="scenario">
-            <strong>Scenario:</strong> "Tell me what DRW does and why low latency matters to their business model."
+            <strong>Scenario:</strong> "Tell me what a market maker does and why low latency matters to their business model."
           </div>
           <ul class="task-list">
             <li><span class="task-check" onclick="checkTask(this)">✓</span> Explain market making in simple terms</li>
@@ -1801,15 +1801,15 @@ FIX SESSION DISCONNECT TROUBLESHOOTING:
           <div class="solution-box" id="sol-T3"><pre>
 <span class="comment">
 MARKET MAKING:
-DRW simultaneously quotes prices to buy (bid) and sell (ask) an asset.
+A market maker simultaneously quotes prices to buy (bid) and sell (ask) an asset.
 They profit from the spread — the difference between bid and ask.
 
-Example: Stock at $100. DRW quotes bid $99.98 / ask $100.02.
+Example: Stock at $100. The firm quotes bid $99.98 / ask $100.02.
 They buy at 99.98 from sellers, sell at 100.02 to buyers. $0.04 profit.
 Done millions of times per day across many assets.
 
 WHY LATENCY MATTERS:
-- DRW must constantly update quotes as the market moves.
+- The firm must constantly update quotes as the market moves.
 - If they're slow to update, they get "picked off" — someone trades
   against a stale quote at an unfavorable price.
 - Being 1ms faster than competitors means their quotes are always
@@ -1818,7 +1818,7 @@ WHY LATENCY MATTERS:
 A 5ms latency spike at market open = potentially thousands of stale
 quotes = significant P&L risk.
 
-This is why support engineers at DRW care deeply about:
+This is why support engineers at trading firms care deeply about:
 - Process performance
 - Network latency
 - System stability during market hours (09:30 - 16:00 ET)
@@ -2133,7 +2133,7 @@ HOW TO SET IT UP:
       <div class="tips-panel">
         <h3>💡 Interview tip for this section</h3>
         <ul>
-          <li>DRW uses Kafka for internal event streaming — trade events, risk updates, market data distribution. Know the consumer lag problem cold.</li>
+          <li>Trading firms use Kafka for internal event streaming — trade events, risk updates, market data distribution. Know the consumer lag problem cold.</li>
           <li>In copy.sh you can install Kafka tools: <code>apt-get install -y default-jdk wget</code> then download Kafka binaries. Or just study the CLI patterns below.</li>
         </ul>
       </div>
@@ -2580,7 +2580,7 @@ would corrupt our P&L and risk calculations."
         <div class="cat-icon" style="background:rgba(74,222,128,0.1)">📨</div>
         <div>
           <div class="cat-title">FIX Protocol</div>
-          <div class="cat-desc">The universal language of electronic trading. Support engineers at DRW must speak FIX fluently — session management, message types, and debugging.</div>
+          <div class="cat-desc">The universal language of electronic trading. Support engineers at trading firms must speak FIX fluently — session management, message types, and debugging.</div>
         </div>
         <a class="open-terminal-btn" href="https://copy.sh/v2/" target="_blank">⌨ Open Terminal</a>
       </div>
@@ -2588,7 +2588,7 @@ would corrupt our P&L and risk calculations."
       <div class="tips-panel">
         <h3>💡 Interview tip for this section</h3>
         <ul>
-          <li>FIX is a text-based protocol: <code>8=FIX.4.2|9=65|35=D|49=DRW|56=EXCHANGE|...</code>. The tag numbers are how you read a FIX message — know the critical ones cold.</li>
+          <li>FIX is a text-based protocol: <code>8=FIX.4.2|9=65|35=D|49=OMS|56=EXCHANGE|...</code>. The tag numbers are how you read a FIX message — know the critical ones cold.</li>
           <li>The most common support task: a FIX session drops, orders stop going through, traders are screaming. Know the reconnect/reset procedure.</li>
         </ul>
       </div>
@@ -2614,7 +2614,7 @@ would corrupt our P&L and risk calculations."
           <div class="scenario">
             <strong>Scenario:</strong> You're given this raw FIX message from a log. Decode it field by field and identify what type of message it is and what action it represents.
             <br><br>
-            <code style="background:#070a0d;padding:8px 12px;border-radius:4px;display:block;margin-top:8px;font-size:12px;color:#86efac;word-break:break-all;">8=FIX.4.2|9=148|35=D|49=DRW_OMS|56=EXCHANGE1|34=1042|52=20240115-09:30:01.123|11=ORD-001|55=AAPL|54=1|38=100|40=2|44=185.50|59=0|10=072|</code>
+            <code style="background:#070a0d;padding:8px 12px;border-radius:4px;display:block;margin-top:8px;font-size:12px;color:#86efac;word-break:break-all;">8=FIX.4.2|9=148|35=D|49=FIRM_OMS|56=EXCHANGE1|34=1042|52=20240115-09:30:01.123|11=ORD-001|55=AAPL|54=1|38=100|40=2|44=185.50|59=0|10=072|</code>
           </div>
           <ul class="task-list">
             <li><span class="task-check" onclick="checkTask(this)">✓</span> Identify the message type (tag 35)</li>
@@ -2632,7 +2632,7 @@ DECODED FIX MESSAGE:
 Tag 8  = FIX.4.2         → FIX version
 Tag 9  = 148             → Body length (bytes)
 Tag 35 = D               → MsgType: New Order Single (place a new order)
-Tag 49 = DRW_OMS         → SenderCompID (us — DRW's order management system)
+Tag 49 = FIRM_OMS        → SenderCompID (our order management system)
 Tag 56 = EXCHANGE1       → TargetCompID (the exchange we're sending to)
 Tag 34 = 1042            → MsgSeqNum: sequence number 1042
 Tag 52 = 20240115-09:30:01.123 → SendingTime
@@ -2645,7 +2645,7 @@ Tag 44 = 185.50          → Price: $185.50 limit price
 Tag 59 = 0               → TimeInForce: 0=Day order
 Tag 10 = 072             → Checksum (last 3 digits of sum of all bytes)
 
-SUMMARY: DRW's OMS sent a Day Limit Buy order for 100 shares of AAPL 
+SUMMARY: Our OMS sent a Day Limit Buy order for 100 shares of AAPL 
 at $185.50 to EXCHANGE1. This is message #1042 in the FIX session.
 
 CRITICAL TAGS TO MEMORIZE:
@@ -2897,7 +2897,7 @@ BASH DIAGNOSTIC CHECKS:</span>
           <div class="scenario">
             <strong>Scenario:</strong> A trader says "my order was rejected." You pull the FIX log and find this Execution Report. Decode it and tell the trader exactly why it was rejected.
             <br><br>
-            <code style="background:#070a0d;padding:8px 12px;border-radius:4px;display:block;margin-top:8px;font-size:12px;color:#86efac;word-break:break-all;">8=FIX.4.2|35=8|49=EXCHANGE1|56=DRW_OMS|34=2087|11=ORD-042|37=EXCH-99321|55=TSLA|54=1|38=5000|40=1|39=8|103=3|58=Order size exceeds position limit|10=201|</code>
+            <code style="background:#070a0d;padding:8px 12px;border-radius:4px;display:block;margin-top:8px;font-size:12px;color:#86efac;word-break:break-all;">8=FIX.4.2|35=8|49=EXCHANGE1|56=FIRM_OMS|34=2087|11=ORD-042|37=EXCH-99321|55=TSLA|54=1|38=5000|40=1|39=8|103=3|58=Order size exceeds position limit|10=201|</code>
           </div>
           <ul class="task-list">
             <li><span class="task-check" onclick="checkTask(this)">✓</span> Identify this is an Execution Report and its status</li>
@@ -2914,7 +2914,7 @@ DECODED EXECUTION REPORT:
 
 Tag 35 = 8          → MsgType: Execution Report
 Tag 49 = EXCHANGE1  → Sent FROM the exchange
-Tag 56 = DRW_OMS    → Sent TO our OMS
+Tag 56 = FIRM_OMS    → Sent TO our OMS
 Tag 11 = ORD-042    → Our order ID (ClOrdID)
 Tag 37 = EXCH-99321 → Exchange's order ID (OrderID)
 Tag 55 = TSLA       → Symbol
@@ -2972,7 +2972,7 @@ TAG 103 OrdRejReason VALUES TO KNOW:
       <div class="tips-panel">
         <h3>💡 Interview tip for this section</h3>
         <ul>
-          <li>DRW's core trading systems are written in C++. You don't need to write C++, but you must understand how to debug native binaries, interpret core dumps, and reason about memory layout.</li>
+          <li>Core trading systems are often written in C++. You don't need to write C++, but you must understand how to debug native binaries, interpret core dumps, and reason about memory layout.</li>
           <li>Key themes: cache misses, lock contention, shared memory IPC, and what makes nanosecond-level latency possible.</li>
         </ul>
       </div>
@@ -4341,7 +4341,7 @@ deploy during market hours can mean stale prices or order failures
 within minutes — so I treat every release during market hours as high
 stakes even if the change looks small.
 
-The piece I'd be excited to grow in at DRW is working more directly
+The piece I'd be excited to grow in this role is working more directly
 with the developers on the platform side — understanding the code
 changes that are going out, not just the deployment mechanics."
 
@@ -4373,7 +4373,7 @@ KEY NUMBERS TO SAY OUT LOUD:
       <div class="tips-panel">
         <h3>💡 Interview tip for this section</h3>
         <ul>
-          <li>DRW explicitly wants someone who "drills into the code." Your GitHub commit review habit is exactly this — make sure you can articulate it technically, not just describe it vaguely.</li>
+          <li>Support engineering roles often want someone who "drills into the code." Your GitHub commit review habit is exactly this — make sure you can articulate it technically, not just describe it vaguely.</li>
           <li>In copy.sh: <code>git init testrepo && cd testrepo</code> to practice all commands hands-on.</li>
         </ul>
       </div>
@@ -4508,7 +4508,7 @@ everyone focuses on logs and metrics."
 <span class="cmd">git bisect reset</span>
 
 <span class="comment">
-WHY THIS MATTERS FOR DRW INTERVIEW:
+WHY THIS MATTERS FOR YOUR INTERVIEW:
 Shows you go beyond "check the logs" — you can surgically find
 the exact commit that broke production. Even if you haven't
 used bisect daily, knowing it exists and how it works signals
@@ -4635,7 +4635,7 @@ senior-level debugging methodology.
             <li><span class="task-check" onclick="checkTask(this)">✓</span> Frame your GitHub commit review as a systematic process, not a lucky guess</li>
             <li><span class="task-check" onclick="checkTask(this)">✓</span> Give a specific example with before/after impact</li>
             <li><span class="task-check" onclick="checkTask(this)">✓</span> Quantify it: 40% MTTI reduction</li>
-            <li><span class="task-check" onclick="checkTask(this)">✓</span> Connect it to DRW's JD: "drilling into the code"</li>
+            <li><span class="task-check" onclick="checkTask(this)">✓</span> Connect it to the JD: "drilling into the code"</li>
           </ul>
           <div class="action-row">
             <button class="solution-toggle" onclick="toggleSolution('sol-G5')">Show Model Answer</button>
@@ -4663,7 +4663,7 @@ I identified the root cause in under 5 minutes by looking at the
 diff rather than spending 30 minutes chasing logs.
 
 Over time this habit reduced our mean time to identify root cause
-by an estimated 40%. I think it directly maps to what DRW described
+by an estimated 40%. I think it directly maps to what the role described
 as 'drilling into those requiring action, including looking into
 the code' — that's exactly the mindset I bring to support."
 
@@ -4686,7 +4686,7 @@ not a last resort."
         <div class="cat-icon" style="background:rgba(74,222,128,0.1)">🌊</div>
         <div>
           <div class="cat-title">Airflow & Pipeline Troubleshooting</div>
-          <div class="cat-desc">You use Airflow daily. DRW's role is "monitor and troubleshoot production jobs" — this is your daily job already. Own it.</div>
+          <div class="cat-desc">You use Airflow daily. This role is about "monitor and troubleshoot production jobs" — this is your daily job already. Own it.</div>
         </div>
         <a class="open-terminal-btn" href="https://copy.sh/v2/" target="_blank">⌨ Open Terminal</a>
       </div>
@@ -4694,7 +4694,7 @@ not a last resort."
       <div class="tips-panel">
         <h3>💡 Interview tip for this section</h3>
         <ul>
-          <li>DRW uses a sophisticated data analysis pipeline — this maps directly to your Airflow DAG monitoring. Frame every answer in terms of "data pipeline" not just "workflow tool."</li>
+          <li>Trading firms use sophisticated data analysis pipelines — this maps directly to your Airflow DAG monitoring. Frame every answer in terms of "data pipeline" not just "workflow tool."</li>
           <li>In copy.sh: <code>pip3 install apache-airflow --break-system-packages</code> to get the CLI. Or just study the concepts and CLI patterns — the interview won't have you install Airflow from scratch.</li>
         </ul>
       </div>
@@ -4873,7 +4873,7 @@ not a last resort."
         </div>
         <div class="challenge-body">
           <div class="scenario">
-            <strong>Scenario:</strong> Write a Python script that calls the Airflow REST API to check if any DAGs in a list have failed runs in the last 24 hours, and print an alert for each one. This is the kind of automation DRW expects.
+            <strong>Scenario:</strong> Write a Python script that calls the Airflow REST API to check if any DAGs in a list have failed runs in the last 24 hours, and print an alert for each one. This is the kind of automation expected in production support roles.
           </div>
           <ul class="task-list">
             <li><span class="task-check" onclick="checkTask(this)">✓</span> Call the Airflow REST API to get DAG run status</li>
@@ -5035,8 +5035,8 @@ Option C: Set sensor timeout + mode='reschedule'
           <ul class="task-list">
             <li><span class="task-check" onclick="checkTask(this)">✓</span> Describe your pipeline monitoring setup at Granite Point</li>
             <li><span class="task-check" onclick="checkTask(this)">✓</span> Give your triage process for a failed DAG/task</li>
-            <li><span class="task-check" onclick="checkTask(this)">✓</span> Mention the quant/forecasting context — this resonates with DRW</li>
-            <li><span class="task-check" onclick="checkTask(this)">✓</span> Connect to DRW's language: "data analysis pipeline," "production jobs"</li>
+            <li><span class="task-check" onclick="checkTask(this)">✓</span> Mention the quant/forecasting context — relevant for trading support roles</li>
+            <li><span class="task-check" onclick="checkTask(this)">✓</span> Connect to trading infrastructure language: "data analysis pipeline," "production jobs"</li>
           </ul>
           <div class="action-row">
             <button class="solution-toggle" onclick="toggleSolution('sol-AF5')">Show Model Answer</button>
@@ -5067,7 +5067,7 @@ One thing I'm intentional about: I never clear a failed task without
 reading the full error first. A blind rerun on a data integrity issue
 can corrupt downstream outputs and create a much bigger problem.
 
-I think this maps directly to what DRW describes as 'operate key
+This maps directly to what support engineering roles describe as 'operate key
 parts of a sophisticated data analysis pipeline' — that's what I do
 every day, just in a trading context."
 
