@@ -1,8 +1,8 @@
 # trading-support-
 trading support scenarios
-# 🏦 DRW Support Engineer Challenge Lab
+# 🏦  Support Engineer Challenge Lab
 
-A self-contained Linux lab environment that simulates real trading infrastructure failures for **support engineering interview preparation** — modelled on the style of DRW's technical challenge scenarios.
+A self-contained Linux lab environment that simulates real trading infrastructure failures for **support engineering interview preparation** — modelled on the style of 's technical challenge scenarios.
 
 > Spin up realistic broken environments, triage them with real Linux tools, and tear everything down cleanly when you're done.
 
@@ -24,7 +24,7 @@ A self-contained Linux lab environment that simulates real trading infrastructur
 
 ## Overview
 
-Each scenario launches real background processes and populates a fake trading file system under `/tmp/drw_lab/`. You get a structured task list to work through using standard Linux tools — exactly the kind of environment you'd face in a support engineering assessment.
+Each scenario launches real background processes and populates a fake trading file system under `/tmp/_lab/`. You get a structured task list to work through using standard Linux tools — exactly the kind of environment you'd face in a support engineering assessment.
 
 **What you practice:**
 
@@ -54,9 +54,9 @@ pip install setproctitle   # optional
 ## Installation
 
 ```bash
-git clone https://github.com/<your-username>/drw-lab.git
-cd drw-lab
-chmod +x drw_lab_setup.py
+git clone https://github.com/<your-username>/-lab.git
+cd -lab
+chmod +x _lab_setup.py
 ```
 
 ---
@@ -65,19 +65,19 @@ chmod +x drw_lab_setup.py
 
 ```bash
 # Interactive menu — choose your scenario
-python3 drw_lab_setup.py
+python3 _lab_setup.py
 
 # Launch a specific scenario directly
-python3 drw_lab_setup.py --scenario 1
+python3 _lab_setup.py --scenario 1
 
 # Check what lab processes are currently running
-python3 drw_lab_setup.py --status
+python3 _lab_setup.py --status
 
 # Print the command cheat sheet
-python3 drw_lab_setup.py --cheatsheet
+python3 _lab_setup.py --cheatsheet
 
 # Tear everything down and clean up
-python3 drw_lab_setup.py --teardown
+python3 _lab_setup.py --teardown
 ```
 
 ---
@@ -96,7 +96,7 @@ Launches two `oms_client` processes burning 100% CPU each — simulating a hung 
 4. Verify the process is gone
 
 ```bash
-python3 drw_lab_setup.py --scenario 1
+python3 _lab_setup.py --scenario 1
 ```
 
 ---
@@ -113,7 +113,7 @@ Launches a process that allocates ~10 MB of RAM every 300ms and never frees it. 
 4. Terminate the leaking process and confirm memory is reclaimed
 
 ```bash
-python3 drw_lab_setup.py --scenario 2
+python3 _lab_setup.py --scenario 2
 ```
 
 ---
@@ -130,7 +130,7 @@ Launches a parent process that forks 5 children, ignores `SIGCHLD`, and lets the
 4. Reap them by killing the parent or sending `SIGCHLD`
 
 ```bash
-python3 drw_lab_setup.py --scenario 3
+python3 _lab_setup.py --scenario 3
 ```
 
 ---
@@ -148,7 +148,7 @@ Launches a `fix_engine` process that writes thousands of debug log lines per sec
 5. Verify disk pressure is cleared
 
 ```bash
-python3 drw_lab_setup.py --scenario 4
+python3 _lab_setup.py --scenario 4
 ```
 
 ---
@@ -165,17 +165,17 @@ Launches all four fault scenarios at once. You must triage by business impact an
 4. Stop log spammer + truncate log → disk alert clears
 
 ```bash
-python3 drw_lab_setup.py --scenario 5
+python3 _lab_setup.py --scenario 5
 ```
 
 ---
 
 ## Directory Structure
 
-The lab creates the following structure under `/tmp/drw_lab/`:
+The lab creates the following structure under `/tmp/_lab/`:
 
 ```
-/tmp/drw_lab/
+/tmp/_lab/
 ├── oms/
 │   ├── bin/
 │   ├── config/
@@ -214,7 +214,7 @@ The lab creates the following structure under `/tmp/drw_lab/`:
 Run the built-in cheat sheet at any time:
 
 ```bash
-python3 drw_lab_setup.py --cheatsheet
+python3 _lab_setup.py --cheatsheet
 ```
 
 | Task | Command |
@@ -260,10 +260,10 @@ python3 drw_lab_setup.py --cheatsheet
 All lab processes and files are cleaned up with a single command:
 
 ```bash
-python3 drw_lab_setup.py --teardown
+python3 _lab_setup.py --teardown
 ```
 
-This sends `SIGTERM` then `SIGKILL` to all tracked processes, sweeps for any strays by name, and removes the entire `/tmp/drw_lab/` directory tree.
+This sends `SIGTERM` then `SIGKILL` to all tracked processes, sweeps for any strays by name, and removes the entire `/tmp/_lab/` directory tree.
 
 ---
 
