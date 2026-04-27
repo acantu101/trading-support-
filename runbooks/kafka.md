@@ -321,3 +321,41 @@ Idempotent producer (`enable_idempotence=True`) + manual consumer offset commit 
 | Lag growing unbounded on all partitions | Consumer failure — scale or restart consumer fleet |
 | Producer NotEnoughReplicasException despite brokers healthy | `min.insync.replicas` misconfiguration |
 | Corrupt message causing consumer crash loop | Skip and quarantine: `auto.offset.reset=latest` or manually advance offset |
+
+---
+
+## Troubleshooting Scripts
+
+All scripts live in `scripts/kafka/` from the repo root.
+
+### lag_monitor.py — consumer group lag checker
+
+Reads a lag snapshot and flags HIGH LAG and NO CONSUMER partitions.
+
+```bash
+# Against the lab snapshot file
+python3 scripts/kafka/lag_monitor.py \
+  --file /tmp/lab_kafka/data/consumer_lag_snapshot.json
+
+# Custom lag threshold (default: 100)
+python3 scripts/kafka/lag_monitor.py \
+  --file /tmp/lab_kafka/data/consumer_lag_snapshot.json \
+  --threshold 500
+
+# Live mode — requires kafka-python and a running broker
+python3 scripts/kafka/lag_monitor.py \
+  --broker localhost:9092 \
+  --group risk-engine-group \
+  --topic trade-executions \
+  --threshold 100
+```
+
+**What it reports:**
+- Per-partition lag with status: OK / ELEVATED / HIGH LAG / NO CONSUMER
+- Summary of partitions needing attention
+- Actionable messages: "add worker instances" or "consumer too slow"
+
+**Install kafka-python for live mode:**
+```bash
+pip3 install kafka-python --break-system-packages
+```

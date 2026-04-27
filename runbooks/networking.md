@@ -345,3 +345,51 @@ cyclictest -t1 -p80 -n -i200 -l10000
 | Latency spikes correlate with switch port counter drops | Network team microburst investigation |
 | DNS resolution works but app still can't connect | Application-level investigation needed |
 | Multicast packets visible on wire but app not receiving | Socket/application configuration bug |
+
+---
+
+## Troubleshooting Scripts
+
+All scripts live in `scripts/networking/` from the repo root.
+
+### port_check.sh — infrastructure connectivity checker
+
+Checks all critical trading endpoints in one shot. Run this first at the start of any connectivity incident.
+
+```bash
+# Check all standard trading ports
+bash scripts/networking/port_check.sh
+
+# Check a specific host and port
+bash scripts/networking/port_check.sh exchange-a.trading.internal 4001
+bash scripts/networking/port_check.sh 127.0.0.1 9092
+```
+
+**What it checks:**
+- DNS resolution for exchange, Kafka, and database hostnames
+- Exchange FIX ports (4001, 4002)
+- Kafka broker (9092), PostgreSQL (5432), Redis (6379)
+- REST API ports (8765, 8080)
+
+**Output:**
+```
+  [OK]   Exchange-A FIX (127.0.0.1:4001)
+  [FAIL] Kafka broker (127.0.0.1:9092) — connection refused or timeout
+```
+
+Followed by next-step guidance for any failed ports: ping, traceroute, ss, resolv.conf.
+
+**Use this as your OSI bottom-up starting point:**
+```bash
+# Step 1: run port check — see what's reachable
+bash scripts/networking/port_check.sh
+
+# Step 2: for any FAIL, trace the path
+traceroute -n <host>
+
+# Step 3: verify the service is listening on the target host
+ss -tlnp | grep <port>
+
+# Step 4: capture traffic to confirm packets are arriving
+sudo tcpdump -i lo port <port> -n
+```

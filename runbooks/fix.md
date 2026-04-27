@@ -270,3 +270,78 @@ cat fix_messages.log | tr '\001' '|'
 | Messages being sent but exchange not acknowledging | Capture tcpdump and send to exchange |
 | SeqNum gap that cannot be replayed | Exchange session reset required — coordinate maintenance window |
 | Orders sent but no ExecutionReports arriving | Check exchange-side processing; may need exchange support ticket |
+
+---
+
+## Troubleshooting Scripts
+
+All scripts live in `scripts/fix/` from the repo root.
+
+### session_monitor.py — continuous health monitor
+
+Watches a FIX log for sequence gaps, rejections, and session restarts.
+
+```bash
+# Run once against the lab acceptor log
+python3 scripts/fix/session_monitor.py \
+  --log /tmp/lab_fix/logs/fix_acceptor.log \
+  --once
+
+# Run continuously (checks every 10s by default)
+python3 scripts/fix/session_monitor.py \
+  --log /var/log/fix/session.log
+
+# Custom interval
+python3 scripts/fix/session_monitor.py \
+  --log /var/log/fix/session.log \
+  --interval 5
+```
+
+**What it alerts on:**
+- Sequence gaps (expected seq N, got N+X)
+- Order rejections (39=8) with ClOrdID and reason
+- ResendRequests detected (gaps occurred during session)
+
+---
+
+### parse_log.sh — quick incident one-liner
+
+Parses a FIX log and prints a full summary: message counts, gaps, rejections, session events.
+
+```bash
+# Against the lab log
+bash scripts/fix/parse_log.sh /tmp/lab_fix/logs/fix_acceptor.log
+
+# Against a production log
+bash scripts/fix/parse_log.sh /var/log/fix/session.log
+```
+
+**Output sections:**
+- Last modified time (is the log stale?)
+- Message type breakdown with counts
+- Sequence gaps (RECV direction)
+- All order rejections with reason text
+- ResendRequests
+- Session Logon/Logout events
+- Message count in last 5 minutes
+
+---
+
+### decode_message.py — decode a raw FIX message
+
+Converts a raw SOH-delimited or pipe-delimited FIX message into readable tag=value pairs.
+
+```bash
+# Pipe-delimited input
+python3 scripts/fix/decode_message.py "8=FIX.4.4|35=D|49=FIRM_OMS|55=AAPL|54=1|38=100|44=185.50|"
+
+# From a .fix file (lab sample messages)
+cat /tmp/lab_fix/messages/new_order_single.fix | python3 scripts/fix/decode_message.py
+cat /tmp/lab_fix/messages/execution_report_fill.fix | python3 scripts/fix/decode_message.py
+cat /tmp/lab_fix/messages/execution_report_reject.fix | python3 scripts/fix/decode_message.py
+
+# List all sample message files
+ls /tmp/lab_fix/messages/*.fix
+```
+
+**Output includes:** MsgType name, sequence number, sender/target, order details (side, qty, symbol, price), execution status, rejection reason.

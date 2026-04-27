@@ -408,3 +408,63 @@ kill -1 <PID>
 | Multiple unrelated processes crashing | Escalate — possible kernel panic or hardware fault |
 | Disk 100% full and truncate does not help | Escalate infra — need disk expansion |
 | Zombie count growing unbounded | Escalate dev — parent process has wait() bug |
+
+---
+
+## Troubleshooting Scripts
+
+All scripts live in `scripts/linux/` from the repo root.
+
+### log_monitor.sh — live error threshold alerting
+
+Monitors a log file and alerts when ERROR/CRITICAL count exceeds a threshold. Includes alert-storm prevention — won't re-alert until the count drops back below the threshold.
+
+```bash
+# Against the lab trading app log
+bash scripts/linux/log_monitor.sh \
+  /tmp/lab_python/logs/trading_app.log
+
+# Custom threshold and interval
+bash scripts/linux/log_monitor.sh \
+  /var/log/trading/app.log 10 30
+# Arguments: [log_file] [threshold] [interval_seconds]
+```
+
+**What it does:**
+- Scans last 200 lines every N seconds for ERROR and CRITICAL
+- Fires an alert with count and top unique error messages when threshold exceeded
+- Resets alert state when count drops (no duplicate alerts)
+- Logs to syslog via `logger` for audit trail
+
+---
+
+### process_watchdog.py — restart a crashed process with backoff
+
+Monitors a trading process and restarts it on crash. Uses exponential backoff (2s, 4s, 8s...) between retries. Pages on-call after max retries exhausted.
+
+```bash
+# Against the lab crashy OMS script
+python3 scripts/linux/process_watchdog.py \
+  --cmd "python3 /tmp/lab_python/scripts/crashy_oms.py"
+
+# Against a real process
+python3 scripts/linux/process_watchdog.py \
+  --cmd "/opt/oms/bin/oms_client" \
+  --retries 5 \
+  --delay 2
+
+# Run in background and capture output
+nohup python3 scripts/linux/process_watchdog.py \
+  --cmd "/opt/oms/bin/oms_client" \
+  > /var/log/watchdog.log 2>&1 &
+```
+
+**Backoff schedule (base delay = 2s):**
+
+| Attempt | Wait before retry |
+|---------|------------------|
+| 1 → 2   | 2s |
+| 2 → 3   | 4s |
+| 3 → 4   | 8s |
+| 4 → 5   | 16s |
+| After 5 | Exit code 1 — page on-call |
