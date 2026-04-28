@@ -513,7 +513,7 @@ def explain(conn, label, sql):
     c.execute(sql)
     rows = c.fetchall()
     elapsed = (time.perf_counter() - t0) * 1000
-    print(f"\\n{{label}} ({elapsed:.1f}ms, {{len(rows)}} rows)")
+    print(f"\\n{{label}} ({{elapsed:.1f}}ms, {{len(rows)}} rows)")
     for row in plan:
         print(f"  PLAN: {{row}}")
 
