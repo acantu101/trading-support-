@@ -52,19 +52,19 @@ def launch_scenario_1():
     stack_file.write_text("""\
 2026-04-28 09:31:42.881 ERROR [order-router] [main-thread] Unhandled exception — service terminating
 
-java.lang.NullPointerException: Cannot invoke "com.drw.trading.market.Quote.getBidPrice()" because "quote" is null
-    at com.drw.trading.router.OrderRouter.calculateSlippage(OrderRouter.java:287)
-    at com.drw.trading.router.OrderRouter.routeOrder(OrderRouter.java:142)
-    at com.drw.trading.router.OrderRouter.processNewOrder(OrderRouter.java:98)
-    at com.drw.trading.fix.FIXSessionHandler.onMessage(FIXSessionHandler.java:201)
+java.lang.NullPointerException: Cannot invoke "com.hft.trading.market.Quote.getBidPrice()" because "quote" is null
+    at com.hft.trading.router.OrderRouter.calculateSlippage(OrderRouter.java:287)
+    at com.hft.trading.router.OrderRouter.routeOrder(OrderRouter.java:142)
+    at com.hft.trading.router.OrderRouter.processNewOrder(OrderRouter.java:98)
+    at com.hft.trading.fix.FIXSessionHandler.onMessage(FIXSessionHandler.java:201)
     at quickfix.Session.nextDataDictionary(Session.java:1847)
     at quickfix.Session.next(Session.java:762)
     at quickfix.ThreadedSocketAcceptor$AcceptorThread.run(ThreadedSocketAcceptor.java:204)
     at java.base/java.lang.Thread.run(Thread.java:833)
 
-Caused by: com.drw.trading.market.MarketDataUnavailableException: No quote available for symbol AAPL
-    at com.drw.trading.market.MarketDataCache.getQuote(MarketDataCache.java:156)
-    at com.drw.trading.router.OrderRouter.calculateSlippage(OrderRouter.java:284)
+Caused by: com.hft.trading.market.MarketDataUnavailableException: No quote available for symbol AAPL
+    at com.hft.trading.market.MarketDataCache.getQuote(MarketDataCache.java:156)
+    at com.hft.trading.router.OrderRouter.calculateSlippage(OrderRouter.java:284)
     ... 7 more
 
 2026-04-28 09:31:42.882 INFO  [order-router] Context: order=ORD-4821 symbol=AAPL side=BUY qty=500 price=185.50
@@ -272,31 +272,31 @@ Java-level deadlock:
 
 === Thread: position-update-thread (BLOCKED) ===
 java.lang.Thread.State: BLOCKED (on object monitor)
-    at com.drw.trading.risk.RiskCalculator.updatePosition(RiskCalculator.java:312)
-    - waiting to lock <0x00000007a1234abc> (com.drw.trading.position.PositionCache)
-    - locked <0x00000007b5678def> (com.drw.trading.market.OrderBook)
-    at com.drw.trading.position.PositionUpdater.applyFill(PositionUpdater.java:89)
-    at com.drw.trading.position.PositionUpdater.run(PositionUpdater.java:45)
+    at com.hft.trading.risk.RiskCalculator.updatePosition(RiskCalculator.java:312)
+    - waiting to lock <0x00000007a1234abc> (com.hft.trading.position.PositionCache)
+    - locked <0x00000007b5678def> (com.hft.trading.market.OrderBook)
+    at com.hft.trading.position.PositionUpdater.applyFill(PositionUpdater.java:89)
+    at com.hft.trading.position.PositionUpdater.run(PositionUpdater.java:45)
 
 === Thread: risk-calc-thread (BLOCKED) ===
 java.lang.Thread.State: BLOCKED (on object monitor)
-    at com.drw.trading.risk.RiskEngine.calculateExposure(RiskEngine.java:198)
-    - waiting to lock <0x00000007b5678def> (com.drw.trading.market.OrderBook)
-    - locked <0x00000007a1234abc> (com.drw.trading.position.PositionCache)
-    at com.drw.trading.risk.RiskEngine.run(RiskEngine.java:87)
+    at com.hft.trading.risk.RiskEngine.calculateExposure(RiskEngine.java:198)
+    - waiting to lock <0x00000007b5678def> (com.hft.trading.market.OrderBook)
+    - locked <0x00000007a1234abc> (com.hft.trading.position.PositionCache)
+    at com.hft.trading.risk.RiskEngine.run(RiskEngine.java:87)
 
 === Thread: kafka-consumer-0 (WAITING) ===
 java.lang.Thread.State: WAITING (on object monitor)
     at java.lang.Object.wait(Native Method)
-    - waiting on <0x00000007c9012ghi> (com.drw.trading.queue.FillQueue)
-    at com.drw.trading.queue.FillQueue.take(FillQueue.java:67)
-    at com.drw.trading.kafka.FillConsumer.run(FillConsumer.java:112)
+    - waiting on <0x00000007c9012ghi> (com.hft.trading.queue.FillQueue)
+    at com.hft.trading.queue.FillQueue.take(FillQueue.java:67)
+    at com.hft.trading.kafka.FillConsumer.run(FillConsumer.java:112)
     # This thread is fine — it's waiting for the queue which is blocked by the deadlock
 
 === Thread: http-health-1 (RUNNABLE) ===
 java.lang.Thread.State: RUNNABLE
     at sun.nio.ch.Net.poll(Native Method)
-    at com.drw.trading.health.HealthServer.serve(HealthServer.java:43)
+    at com.hft.trading.health.HealthServer.serve(HealthServer.java:43)
     # Health endpoint still responding — misleading, service IS deadlocked
 
 === Thread: ForkJoinPool-1-worker-3 (WAITING) ===
@@ -402,9 +402,9 @@ java.lang.OutOfMemoryError: Java heap space
     at java.util.Arrays.copyOf(Arrays.java:3512)
     at java.util.ArrayList.grow(ArrayList.java:265)
     at java.util.ArrayList.add(ArrayList.java:456)
-    at com.drw.trading.market.TickCache.store(TickCache.java:89)
-    at com.drw.trading.market.TickProcessor.process(TickProcessor.java:134)
-    at com.drw.trading.market.TickProcessor.run(TickProcessor.java:67)
+    at com.hft.trading.market.TickCache.store(TickCache.java:89)
+    at com.hft.trading.market.TickProcessor.process(TickProcessor.java:134)
+    at com.hft.trading.market.TickProcessor.run(TickProcessor.java:67)
 
 # JVM flags at startup:
 # -Xmx2g -Xms512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError

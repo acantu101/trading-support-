@@ -15,6 +15,7 @@ A self-contained Linux lab environment that simulates real trading infrastructur
 - [The Interactive Lab (HTML)](#the-interactive-lab-html)
 - [Lab Scripts](#lab-scripts)
 - [Challenge Categories](#challenge-categories)
+- [Runbooks](#runbooks)
 - [Directory Structure](#directory-structure)
 - [Command Reference](#command-reference)
 - [Interview Tips](#interview-tips)
@@ -27,7 +28,7 @@ A self-contained Linux lab environment that simulates real trading infrastructur
 | File | Purpose |
 |------|---------|
 | `challenge-lab.html` | Interactive browser guide — 60+ challenges with hints, solutions, and progress tracking |
-| `scenarios/lab.py` | Unified entry point — top-level menu across all 9 challenge categories |
+| `scenarios/lab.py` | Unified entry point — top-level menu across all 13 challenge categories |
 | `scenarios/common.py` | Shared utilities (colors, PID management, teardown helpers) |
 | `scenarios/lab_linux.py` | Linux & Systems scenarios (L-01 to L-10) |
 | `scenarios/lab_networking.py` | Networking scenarios (N-01 to N-05) |
@@ -37,7 +38,11 @@ A self-contained Linux lab environment that simulates real trading infrastructur
 | `scenarios/lab_sql.py` | SQL & Databases scenarios (S-01 to S-06) |
 | `scenarios/lab_git.py` | Git scenarios (G-01 to G-05) |
 | `scenarios/lab_airflow.py` | Airflow scenarios (AF-01 to AF-05) |
-| `scenarios/lab_python.py` | Python & Bash scripting scenarios (P-01 to P-06) |
+| `scenarios/lab_python.py` | Python & Bash scripting + OOP scenarios (P-01 to P-08) |
+| `scenarios/lab_aws.py` | AWS & Cloud scenarios (A-01 to A-05) |
+| `scenarios/lab_java.py` | Java / JVM scenarios (J-01 to J-04) |
+| `scenarios/lab_marketdata.py` | Market Data & Protocols scenarios (MD-01 to MD-05) |
+| `scenarios/lab_monitoring.py` | Monitoring & Observability scenarios (M-01 to M-05) |
 
 ---
 
@@ -48,9 +53,11 @@ A self-contained Linux lab environment that simulates real trading infrastructur
 - A modern browser (for the HTML lab)
 - Standard Unix utilities: `ps`, `pgrep`, `kill`, `top`, `lsof`, `du`, `df`, `ss`
 - Optional: `htop`, `setproctitle` (improves process naming in `ps` output)
+- Optional: `h5py` (required for MD-03 HDF5 tick data scenario — falls back to CSV without it)
 
 ```bash
-pip install setproctitle   # optional — better process names in ps/top
+pip install setproctitle          # optional — better process names in ps/top
+sudo apt install python3-h5py     # optional — HDF5 tick data scenario (MD-03)
 ```
 
 No other third-party Python packages required for the lab scripts.
@@ -78,6 +85,8 @@ python3 lab.py
 python3 lab.py --category linux
 python3 lab.py --category kafka
 python3 lab.py --category sql
+python3 lab.py --category aws
+python3 lab.py --category monitoring
 
 # Check status of all running lab processes
 python3 lab.py --status
@@ -129,15 +138,19 @@ python3 lab.py
 ```
   KEY          CATEGORY
 
-    linux        L  Linux & Systems
-    networking   N  Networking
-    fix          F  FIX Protocol
-    kafka        K  Kafka
-    k8s          K8 Kubernetes & ArgoCD
-    sql          S  SQL & Databases
-    git          G  Git
-    airflow      A  Airflow
-    python       P  Python & Bash
+    linux        L   Linux & Systems
+    networking   N   Networking
+    fix          F   FIX Protocol
+    kafka        K   Kafka
+    k8s          K8  Kubernetes & ArgoCD
+    sql          S   SQL & Databases
+    git          G   Git
+    airflow      AF  Airflow
+    python       P   Python & Bash (+ OOP)
+    aws          AW  AWS & Cloud
+    java         J   Java / JVM
+    marketdata   MD  Market Data & Protocols
+    monitoring   M   Monitoring & Observability
 
     teardown     Tear down all labs
     status       Show all lab process status
@@ -172,8 +185,8 @@ Spawns real broken processes on your VM to practice with actual Linux tools.
 | L-06 | Large files eating disk space | Rotated log files totalling ~1.5 GB |
 | L-07 | Failed systemd service | Unit file + simulated crash journal |
 | L-08 | Full one-box performance triage | CPU + memory + log spam simultaneously |
-| 9 | Zombie processes | `risk_engine` parent with 5 zombie children |
-| 10 | Runaway log file | `fix_engine` spamming debug lines until disk fills |
+| L-09 | Zombie processes | `risk_engine` parent with 5 zombie children |
+| L-10 | Runaway log file | `fix_engine` spamming debug lines until disk fills |
 | 99 | **Full incident** | All faults at once — triage in priority order |
 
 ### Networking (`lab_networking.py`)
@@ -262,6 +275,69 @@ Creates a SQLite trading database (`/tmp/lab_sql/db/trading.db`) with traders, t
 | P-04 | REST API client — query a live mock trading API |
 | P-05 | FIX message parser — decode raw tag=value messages |
 | P-06 | Kafka consumer lag monitor — read JSON snapshot, alert on lag |
+| P-07 | OOP & strategy pattern — risk check engine with abstract base classes |
+| P-08 | Observer pattern — market data feed with multiple downstream handlers |
+
+### AWS & Cloud (`lab_aws.py`)
+
+| # | Scenario |
+|---|----------|
+| A-01 | CloudWatch Log Insights — parse errors, warnings, slow queries per service |
+| A-02 | S3 tick data analysis — VWAP, spread, exchange breakdown from Parquet layout |
+| A-03 | IAM AccessDenied triage — identify missing policy statement, fix and verify |
+| A-04 | CloudWatch alarm cascade — sort firing alarms by timestamp, find root cause |
+| A-05 | EKS node NotReady — CNI not initialized, cordon/drain procedure |
+
+### Java / JVM (`lab_java.py`)
+
+| # | Scenario |
+|---|----------|
+| J-01 | Read a Java stack trace — NullPointerException + Caused By chain |
+| J-02 | GC log analysis — identify Full GC pause, heap growth pattern, memory leak |
+| J-03 | Thread dump — deadlock detection between position-update and risk-calc threads |
+| J-04 | OutOfMemoryError — unbounded tick cache growing to OOM, heap dump analysis |
+
+### Market Data & Protocols (`lab_marketdata.py`)
+
+| # | Scenario |
+|---|----------|
+| MD-01 | L2 order book — build bid/ask depth from update stream, calculate spread/mid |
+| MD-02 | ITCH 5.0 binary protocol — decode big-endian Add Order messages with struct |
+| MD-03 | HDF5 tick storage — read/write with h5py, VWAP calculation, columnar access |
+| MD-04 | Feed handler gap detection — sequence number gaps, recovery procedure |
+| MD-05 | SBE binary encoding — decode little-endian CME-style market data messages |
+
+### Monitoring & Observability (`lab_monitoring.py`)
+
+| # | Scenario |
+|---|----------|
+| M-01 | Latency percentiles — p50/p95/p99 calculation, SLA breach detection |
+| M-02 | CloudWatch metrics — 90-minute degradation window, cascade identification |
+| M-03 | Prometheus & PromQL — metric types, essential queries, Grafana panel guide |
+| M-04 | Alert triage workflow — PagerDuty alert, 8-step response process |
+| M-05 | Trading KPIs — warn/critical thresholds for order routing, market data, risk, infra |
+
+---
+
+## Runbooks
+
+The `runbooks/` directory contains reference documentation for each domain. Read these alongside the lab scenarios.
+
+| File | Covers |
+|------|--------|
+| `runbooks/linux.md` | Process triage, disk, permissions, systemd |
+| `runbooks/networking.md` | TCP/UDP, tcpdump, DNS, multicast |
+| `runbooks/fix.md` | FIX message types, session flow, sequence gaps |
+| `runbooks/kafka.md` | Consumer lag, broker health, topic ops, delivery semantics |
+| `runbooks/k8s.md` | Pod states, ArgoCD sync, rollback, resource limits |
+| `runbooks/sql.md` | Queries, indexes, transactions, locking, maintenance |
+| `runbooks/git.md` | Bisect, rebase, cherry-pick, branch recovery |
+| `runbooks/airflow.md` | DAG debugging, SLA misses, sensors, backfill |
+| `runbooks/python.md` | Scripting patterns, OOP, strategy/observer patterns |
+| `runbooks/aws.md` | CloudWatch, S3, IAM, EKS, Kinesis/Lambda |
+| `runbooks/java.md` | Stack traces, GC logs, thread dumps, OOM types |
+| `runbooks/marketdata.md` | Order book levels, ITCH/SBE protocols, HDF5, gap detection |
+| `runbooks/monitoring.md` | Latency percentiles, PromQL, alert triage, trading KPIs |
 
 ---
 
@@ -279,7 +355,11 @@ Each lab creates an isolated directory under `/tmp/`:
 ├── lab_sql/           ← SQL lab (includes trading.db)
 ├── lab_git/           ← Git lab (bare repo + working clone)
 ├── lab_airflow/       ← Airflow lab
-└── lab_python/        ← Python & Bash lab
+├── lab_python/        ← Python & Bash lab
+├── lab_aws/           ← AWS lab
+├── lab_java/          ← Java / JVM lab
+├── lab_marketdata/    ← Market Data lab
+└── lab_monitoring/    ← Monitoring lab
 ```
 
 Each directory contains:
@@ -332,6 +412,30 @@ Each directory contains:
 | DNS lookup | `dig <hostname>` / `nslookup <hostname>` |
 | Multicast groups | `ip maddr` |
 
+### Kubernetes
+
+| Task | Command |
+|------|---------|
+| Pod status | `kubectl get pods -n trading` |
+| Pod logs | `kubectl logs -n trading <pod>` |
+| Exec into container | `kubectl exec -n trading -it <pod> -- /bin/bash` |
+| Node status | `kubectl get nodes` |
+| Describe node | `kubectl describe node <node>` |
+| Cordon node | `kubectl cordon <node>` |
+| Drain node | `kubectl drain <node> --ignore-daemonsets --delete-emptydir-data` |
+| Uncordon node | `kubectl uncordon <node>` |
+| Force delete pod | `kubectl delete pod <pod> -n trading --force --grace-period=0` |
+
+### Java / JVM
+
+| Task | Command |
+|------|---------|
+| Thread dump (non-destructive) | `kill -3 <java-pid>` |
+| Thread dump to file | `jstack <java-pid> > /tmp/threaddump.txt` |
+| Find Java PID | `pgrep -f order-router` |
+| Copy heap dump from pod | `kubectl cp trading/<pod>:/var/log/dumps/heap.hprof ./` |
+| GC log location | `/var/log/app-gc.log` (if `-Xlog:gc*` flag set) |
+
 ---
 
 ## Interview Tips
@@ -354,6 +458,10 @@ Each directory contains:
 - For SQL: you know when to use `EXPLAIN` and why index column order matters
 - For Kafka: you understand the difference between at-least-once and exactly-once delivery
 - For FIX: you can describe the logon/logout flow and sequence number gaps
+- For JVM: you can read a stack trace to the root `Caused by:`, not just the surface exception
+- For monitoring: you know why p99 matters more than average for trading latency
+- For market data: you can explain why a sequence gap requires halting trading on that symbol
+- For AWS: you can triage an IAM AccessDenied from logs before touching the console
 
 **Pro tip:** Run the full incident scenarios (scenario 99 in Linux, or `python3 lab.py --category linux` then pick 99) and practice triaging multiple faults in priority order. That structured thinking under pressure is exactly what production on-call looks like.
 

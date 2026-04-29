@@ -532,12 +532,12 @@ This is why a single feed outage causes multiple services to report stale data a
 
 ```
 # Procedural: one large function, stack trace shows one frame
-at com.drw.trading.Main.processAll(Main.java:142)
+at com.hft.trading.Main.processAll(Main.java:142)
 
 # OOP: multiple classes, stack trace shows the full call chain
-at com.drw.trading.risk.PositionLimitCheck.check(PositionLimitCheck.java:45)
-at com.drw.trading.risk.RiskEngine.approve(RiskEngine.java:88)
-at com.drw.trading.router.OrderRouter.routeOrder(OrderRouter.java:142)
+at com.hft.trading.risk.PositionLimitCheck.check(PositionLimitCheck.java:45)
+at com.hft.trading.risk.RiskEngine.approve(RiskEngine.java:88)
+at com.hft.trading.router.OrderRouter.routeOrder(OrderRouter.java:142)
 ```
 
 Reading the class names in a Java stack trace tells you which component failed — the OOP structure makes the call chain explicit.

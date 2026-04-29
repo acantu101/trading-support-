@@ -94,33 +94,33 @@ fields @timestamp, @message
 
 ```bash
 # List tick files for a date
-aws s3 ls s3://drw-market-data/ticks/2026/04/28/
+aws s3 ls s3://hft-market-data/ticks/2026/04/28/
 
 # List recursively with sizes
-aws s3 ls s3://drw-market-data/ticks/ --recursive --human-readable
+aws s3 ls s3://hft-market-data/ticks/ --recursive --human-readable
 
 # Download a tick file
-aws s3 cp s3://drw-market-data/ticks/2026/04/28/AAPL_20260428.csv.gz .
+aws s3 cp s3://hft-market-data/ticks/2026/04/28/AAPL_20260428.csv.gz .
 
 # Sync a full day's data locally
-aws s3 sync s3://drw-market-data/ticks/2026/04/28/ ./local_data/
+aws s3 sync s3://hft-market-data/ticks/2026/04/28/ ./local_data/
 
 # Check object metadata (size, last modified, ETag)
-aws s3api head-object --bucket drw-market-data \
+aws s3api head-object --bucket hft-market-data \
   --key ticks/2026/04/28/AAPL_20260428.csv.gz
 
 # Generate a presigned URL (gives temp access without IAM credentials)
-aws s3 presign s3://drw-market-data/ticks/2026/04/28/AAPL_20260428.csv.gz \
+aws s3 presign s3://hft-market-data/ticks/2026/04/28/AAPL_20260428.csv.gz \
   --expires-in 3600
 
 # Check bucket versioning
-aws s3api get-bucket-versioning --bucket drw-market-data
+aws s3api get-bucket-versioning --bucket hft-market-data
 ```
 
 ### S3 bucket layout for trading
 
 ```
-s3://drw-market-data/
+s3://hft-market-data/
   ticks/YYYY/MM/DD/SYMBOL_YYYYMMDD.csv.gz     ← raw tick data (compressed)
   processed/YYYY/MM/DD/trades_partitioned.parquet ← Athena-queryable
   reports/YYYY/MM/DD/regulatory_report.json   ← compliance outputs
@@ -160,7 +160,7 @@ s3://drw-market-data/
 ```
 Error signature:
   AmazonS3Exception: Access Denied (Status Code: 403; Error Code: AccessDenied)
-  Bucket: drw-market-data
+  Bucket: hft-market-data
   Key: ticks/2026/04/28/AAPL_20260428.csv.gz
 ```
 
@@ -186,7 +186,7 @@ aws iam get-policy-version \
 aws iam simulate-principal-policy \
   --policy-source-arn arn:aws:iam::123456789012:role/market-data-feed-role \
   --action-names s3:GetObject \
-  --resource-arns arn:aws:s3:::drw-market-data/ticks/2026/04/28/AAPL_20260428.csv.gz
+  --resource-arns arn:aws:s3:::hft-market-data/ticks/2026/04/28/AAPL_20260428.csv.gz
 ```
 
 ### IAM policy structure
@@ -203,8 +203,8 @@ aws iam simulate-principal-policy \
         "s3:ListBucket"
       ],
       "Resource": [
-        "arn:aws:s3:::drw-market-data",
-        "arn:aws:s3:::drw-market-data/*"
+        "arn:aws:s3:::hft-market-data",
+        "arn:aws:s3:::hft-market-data/*"
       ]
     }
   ]

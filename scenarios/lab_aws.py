@@ -182,7 +182,7 @@ def launch_scenario_2():
     # Mock S3 listing (aws s3 ls output)
     s3_listing = DIRS["mock"] / "s3_listing.txt"
     s3_listing.write_text("""\
-# Output of: aws s3 ls s3://drw-market-data/ticks/ --recursive
+# Output of: aws s3 ls s3://hft-market-data/ticks/ --recursive
 2026-04-27 18:00:01    2457600  ticks/2026/04/27/AAPL_20260427.csv.gz
 2026-04-27 18:00:03    1843200  ticks/2026/04/27/GOOGL_20260427.csv.gz
 2026-04-27 18:00:05    3112960  ticks/2026/04/27/MSFT_20260427.csv.gz
@@ -277,9 +277,9 @@ for exch, prices_e in sorted(by_exch.items()):
     print(f"    {{exch:<10}} {{len(prices_e):4}} ticks  avg=${{sum(prices_e)/len(prices_e):.2f}}")
 
 print("\\n=== AWS CLI equivalents (for reference) ===")
-print("  aws s3 ls s3://drw-market-data/ticks/2026/04/28/")
-print("  aws s3 cp s3://drw-market-data/ticks/2026/04/28/AAPL_20260428.csv.gz .")
-print("  aws s3api get-object-attributes --bucket drw-market-data --key ticks/...")
+print("  aws s3 ls s3://hft-market-data/ticks/2026/04/28/")
+print("  aws s3 cp s3://hft-market-data/ticks/2026/04/28/AAPL_20260428.csv.gz .")
+print("  aws s3api get-object-attributes --bucket hft-market-data --key ticks/...")
 """)
     ok(f"Analysis script: {script}")
 
@@ -320,7 +320,7 @@ def launch_scenario_3():
   Exception: com.amazonaws.services.s3.model.AmazonS3Exception:
     Access Denied (Service: Amazon S3; Status Code: 403; Error Code: AccessDenied)
     Request ID: 7B4C2E8F1A3D9B0E
-    Bucket: drw-market-data
+    Bucket: hft-market-data
     Key: ticks/2026/04/28/AAPL_20260428.csv.gz
 
 2026-04-28T09:31:06Z ERROR [market-data-feed] Retrying in 5s (attempt 1/3)
@@ -340,8 +340,8 @@ def launch_scenario_3():
                 "Effect": "Allow",
                 "Action": ["s3:GetObject", "s3:ListBucket"],
                 "Resource": [
-                    "arn:aws:s3:::drw-internal-data",
-                    "arn:aws:s3:::drw-internal-data/*"
+                    "arn:aws:s3:::hft-internal-data",
+                    "arn:aws:s3:::hft-internal-data/*"
                 ]
             },
             {
@@ -364,8 +364,8 @@ def launch_scenario_3():
                 "Effect": "Allow",
                 "Action": ["s3:GetObject", "s3:ListBucket"],
                 "Resource": [
-                    "arn:aws:s3:::drw-internal-data",
-                    "arn:aws:s3:::drw-internal-data/*"
+                    "arn:aws:s3:::hft-internal-data",
+                    "arn:aws:s3:::hft-internal-data/*"
                 ]
             },
             {
@@ -373,8 +373,8 @@ def launch_scenario_3():
                 "Effect": "Allow",
                 "Action": ["s3:GetObject", "s3:ListBucket"],
                 "Resource": [
-                    "arn:aws:s3:::drw-market-data",
-                    "arn:aws:s3:::drw-market-data/*"
+                    "arn:aws:s3:::hft-market-data",
+                    "arn:aws:s3:::hft-market-data/*"
                 ]
             },
             {
@@ -508,7 +508,7 @@ print(\"\"\"
   09:31:03  RiskEngine-ConsumerLag-High     ← SECOND — no market data = lag builds up
   09:31:05  OrderRouter-P99Latency-High     ← THIRD — risk checks slow = orders queue up
 
-  Root cause: IAM permissions missing on drw-market-data bucket (see A-03)
+  Root cause: IAM permissions missing on hft-market-data bucket (see A-03)
   The S3 failure cascaded → no market data → risk engine stalled → order latency spike
 
   Fix order:

@@ -14,15 +14,15 @@ This runbook covers JVM troubleshooting for a trading system support engineer. Y
 2026-04-28 09:31:42.881 ERROR [order-router] Unhandled exception
 
 java.lang.NullPointerException: Cannot invoke "Quote.getBidPrice()" because "quote" is null
-    at com.drw.trading.router.OrderRouter.calculateSlippage(OrderRouter.java:287)  ← crash site
-    at com.drw.trading.router.OrderRouter.routeOrder(OrderRouter.java:142)
-    at com.drw.trading.router.OrderRouter.processNewOrder(OrderRouter.java:98)
-    at com.drw.trading.fix.FIXSessionHandler.onMessage(FIXSessionHandler.java:201)
+    at com.hft.trading.router.OrderRouter.calculateSlippage(OrderRouter.java:287)  ← crash site
+    at com.hft.trading.router.OrderRouter.routeOrder(OrderRouter.java:142)
+    at com.hft.trading.router.OrderRouter.processNewOrder(OrderRouter.java:98)
+    at com.hft.trading.fix.FIXSessionHandler.onMessage(FIXSessionHandler.java:201)
     ...
 
-Caused by: com.drw.trading.market.MarketDataUnavailableException: No quote for AAPL
-    at com.drw.trading.market.MarketDataCache.getQuote(MarketDataCache.java:156)  ← root cause
-    at com.drw.trading.router.OrderRouter.calculateSlippage(OrderRouter.java:284)
+Caused by: com.hft.trading.market.MarketDataUnavailableException: No quote for AAPL
+    at com.hft.trading.market.MarketDataCache.getQuote(MarketDataCache.java:156)  ← root cause
+    at com.hft.trading.router.OrderRouter.calculateSlippage(OrderRouter.java:284)
     ... 7 more
 ```
 
