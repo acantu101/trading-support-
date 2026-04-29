@@ -23,15 +23,19 @@ from common import GREEN, YELLOW, RED, CYAN, BOLD, RESET, SEP, ok, warn, err, he
 
 
 CATEGORIES = {
-    "linux":      ("lab_linux",      "L  Linux & Systems"),
-    "networking": ("lab_networking", "N  Networking"),
-    "fix":        ("lab_fix",        "F  FIX Protocol"),
-    "kafka":      ("lab_kafka",      "K  Kafka"),
-    "k8s":        ("lab_k8s",        "K8 Kubernetes & ArgoCD"),
-    "sql":        ("lab_sql",        "S  SQL & Databases"),
-    "git":        ("lab_git",        "G  Git"),
-    "airflow":    ("lab_airflow",    "A  Airflow"),
-    "python":     ("lab_python",     "P  Python & Bash"),
+    "linux":      ("lab_linux",       "L   Linux & Systems"),
+    "networking": ("lab_networking",  "N   Networking"),
+    "fix":        ("lab_fix",         "F   FIX Protocol"),
+    "kafka":      ("lab_kafka",       "K   Kafka"),
+    "k8s":        ("lab_k8s",         "K8  Kubernetes & ArgoCD"),
+    "sql":        ("lab_sql",         "S   SQL & Databases"),
+    "git":        ("lab_git",         "G   Git"),
+    "airflow":    ("lab_airflow",     "AF  Airflow"),
+    "python":     ("lab_python",      "P   Python & Bash (+ OOP)"),
+    "aws":        ("lab_aws",         "AW  AWS & Cloud"),
+    "java":       ("lab_java",        "J   Java / JVM"),
+    "marketdata": ("lab_marketdata",  "MD  Market Data & Protocols"),
+    "monitoring": ("lab_monitoring",  "M   Monitoring & Observability"),
 }
 
 CATEGORY_KEYS = list(CATEGORIES.keys())

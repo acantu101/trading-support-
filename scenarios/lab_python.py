@@ -697,10 +697,354 @@ else:
 """)
 
 
+def launch_scenario_7():
+    header("Scenario P-07 — Reading OOP Python Code")
+    print("  Read a class hierarchy for a trading system.")
+    print("  Understand inheritance, interfaces, and the strategy pattern.\n")
+
+    oop_file = DIRS["scripts"] / "trading_oop.py"
+    oop_file.write_text("""\
+#!/usr/bin/env python3
+\"\"\"
+P-07: OOP patterns in a trading system.
+Read this code and answer the questions below.
+\"\"\"
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Optional
+
+
+# ── Data classes (like structs) ────────────────────────────────
+@dataclass
+class Order:
+    order_id:  str
+    symbol:    str
+    side:      str     # "BUY" or "SELL"
+    quantity:  int
+    price:     float
+    order_type: str    # "LIMIT" or "MARKET"
+
+
+@dataclass
+class Fill:
+    order_id:  str
+    symbol:    str
+    quantity:  int
+    fill_price: float
+    venue:     str
+
+
+# ── Abstract base class (interface) ───────────────────────────
+class RiskCheck(ABC):
+    \"\"\"Base class for all pre-trade risk checks.\"\"\"
+
+    @abstractmethod
+    def check(self, order: Order) -> tuple[bool, str]:
+        \"\"\"Return (passed, reason). If passed=False, order is blocked.\"\"\"
+        pass
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}()"
+
+
+# ── Concrete implementations ───────────────────────────────────
+class PositionLimitCheck(RiskCheck):
+    def __init__(self, max_position: int):
+        self.max_position = max_position
+        self._positions: dict[str, int] = {}
+
+    def check(self, order: Order) -> tuple[bool, str]:
+        current = self._positions.get(order.symbol, 0)
+        new_pos = current + (order.quantity if order.side == "BUY" else -order.quantity)
+        if abs(new_pos) > self.max_position:
+            return False, f"Position limit breach: {abs(new_pos)} > {self.max_position}"
+        return True, "ok"
+
+    def update(self, fill: Fill):
+        \"\"\"Call this after a fill to update the tracked position.\"\"\"
+        delta = fill.quantity if fill.symbol else -fill.quantity
+        self._positions[fill.symbol] = self._positions.get(fill.symbol, 0) + delta
+
+
+class NotionalLimitCheck(RiskCheck):
+    def __init__(self, max_notional: float):
+        self.max_notional = max_notional
+
+    def check(self, order: Order) -> tuple[bool, str]:
+        notional = order.quantity * order.price
+        if notional > self.max_notional:
+            return False, f"Notional limit breach: ${notional:,.0f} > ${self.max_notional:,.0f}"
+        return True, "ok"
+
+
+class SymbolBlocklistCheck(RiskCheck):
+    def __init__(self, blocked: set):
+        self.blocked = blocked
+
+    def check(self, order: Order) -> tuple[bool, str]:
+        if order.symbol in self.blocked:
+            return False, f"Symbol {order.symbol} is on the blocklist"
+        return True, "ok"
+
+
+# ── Strategy pattern: RiskEngine composes multiple checks ─────
+class RiskEngine:
+    \"\"\"
+    Runs a configurable list of RiskCheck strategies.
+    Adding a new check requires zero changes to this class.
+    \"\"\"
+    def __init__(self, checks: list[RiskCheck]):
+        self.checks = checks
+
+    def approve(self, order: Order) -> tuple[bool, list[str]]:
+        failures = []
+        for check in self.checks:
+            passed, reason = check.check(order)
+            if not passed:
+                failures.append(f"{check}: {reason}")
+        return (len(failures) == 0), failures
+
+
+# ── Main: demonstrate the system ──────────────────────────────
+if __name__ == "__main__":
+    engine = RiskEngine(checks=[
+        PositionLimitCheck(max_position=10_000),
+        NotionalLimitCheck(max_notional=1_000_000),
+        SymbolBlocklistCheck(blocked={"GME", "AMC"}),
+    ])
+
+    orders = [
+        Order("ORD-001", "AAPL",  "BUY",  500,   185.50, "LIMIT"),
+        Order("ORD-002", "TSLA",  "BUY",  200,   248.00, "LIMIT"),
+        Order("ORD-003", "GME",   "BUY",  100,    20.00, "MARKET"),   # blocked
+        Order("ORD-004", "MSFT",  "BUY",  6000,  380.00, "LIMIT"),    # notional breach
+        Order("ORD-005", "NVDA",  "SELL", 300,   495.00, "LIMIT"),
+    ]
+
+    print("=== Risk Check Results ===")
+    for order in orders:
+        passed, reasons = engine.approve(order)
+        status = "✓ APPROVED" if passed else "✗ REJECTED"
+        print(f"  {status}  {order.order_id}  {order.side} {order.quantity} {order.symbol} @ ${order.price}")
+        for r in reasons:
+            print(f"           Reason: {r}")
+\"\"\")
+    ok(f"OOP code: {oop_file}")
+
+    questions = DIRS["scripts"] / "p07_questions.txt"
+    questions.write_text("""\
+P-07 OOP Questions — Answer These
+====================================
+
+1. What is an abstract base class? What does @abstractmethod do?
+   Hint: look at RiskCheck
+
+2. What does inheritance mean here?
+   Which classes inherit from RiskCheck?
+   What do they all have in common?
+
+3. What is the Strategy pattern?
+   Why does RiskEngine take a list of checks instead of having the logic hardcoded?
+   What happens if you want to add a new DailyVolumeCheck?
+
+4. What is a @dataclass?
+   Why use it for Order and Fill instead of a regular class?
+
+5. What does ABC stand for and why is it useful?
+
+6. What happens in this line:
+   engine = RiskEngine(checks=[PositionLimitCheck(10_000), ...])
+   What are you passing in?
+
+ANSWERS:
+  1. ABC defines methods that MUST be implemented by subclasses.
+     @abstractmethod means: any subclass must override check() or it won't instantiate.
+
+  2. PositionLimitCheck, NotionalLimitCheck, SymbolBlocklistCheck all inherit RiskCheck.
+     They all implement check(order) → (bool, str).
+     This guarantees the engine can call check() on any of them.
+
+  3. Strategy pattern: behaviour (risk checking logic) is separated into interchangeable classes.
+     RiskEngine doesn't care HOW each check works, just that it returns (bool, str).
+     Adding DailyVolumeCheck: just write the class, add it to the list. Zero other changes.
+
+  4. @dataclass auto-generates __init__, __repr__, __eq__ from the field annotations.
+     Clean way to define simple data containers without boilerplate.
+
+  5. ABC = Abstract Base Class. Enforces an "interface" contract in Python.
+     In Java this would be an interface or abstract class.
+
+  6. You are passing instances (objects) of the check classes.
+     Each has its own state (max_position=10_000, max_notional=1_000_000, etc.)
+""")
+    ok(f"Questions: {questions}")
+
+    print(f"""
+{BOLD}── Read and run the OOP code: ──────────────────────────{RESET}
+{CYAN}       python3 {oop_file}{RESET}
+
+{BOLD}── Answer the questions: ───────────────────────────────{RESET}
+{CYAN}       cat {questions}{RESET}
+
+{BOLD}── Key OOP concepts ────────────────────────────────────{RESET}
+  Class       : blueprint for an object (RiskCheck, Order)
+  Instance    : a specific object created from a class
+  Inheritance : child class gets all methods of parent (IS-A relationship)
+  Abstract    : defines what subclasses MUST implement
+  Strategy    : swap behaviours without changing the caller (RiskEngine)
+  Composition : an object contains other objects (RiskEngine HAS-A list of checks)
+""")
+
+
+def launch_scenario_8():
+    header("Scenario P-08 — Observer Pattern (Market Data Events)")
+    print("  The observer pattern is how market data feeds notify")
+    print("  multiple services when a price updates.\n")
+
+    observer_file = DIRS["scripts"] / "market_data_observer.py"
+    observer_file.write_text("""\
+#!/usr/bin/env python3
+\"\"\"
+P-08: Observer pattern — market data feed notifying multiple handlers.
+In production, this is how a feed handler pushes ticks to
+the risk engine, blotter, position service, and PnL calculator.
+\"\"\"
+from dataclasses import dataclass
+from abc import ABC, abstractmethod
+from typing import Optional
+import time, random
+
+
+@dataclass
+class Tick:
+    symbol: str
+    bid:    float
+    ask:    float
+    size:   int
+
+    @property
+    def mid(self) -> float:
+        return round((self.bid + self.ask) / 2, 4)
+
+    @property
+    def spread(self) -> float:
+        return round(self.ask - self.bid, 4)
+
+
+# ── Observer interface ─────────────────────────────────────────
+class TickHandler(ABC):
+    @abstractmethod
+    def on_tick(self, tick: Tick) -> None:
+        pass
+
+
+# ── Concrete observers ────────────────────────────────────────
+class BlotterService(TickHandler):
+    \"\"\"Displays live prices to the trading blotter UI.\"\"\"
+    def on_tick(self, tick: Tick) -> None:
+        print(f"  [BLOTTER]   {tick.symbol:6} bid={tick.bid:.4f}  ask={tick.ask:.4f}  spread={tick.spread:.4f}")
+
+
+class RiskEngineHandler(TickHandler):
+    \"\"\"Updates mark-to-market P&L when prices move.\"\"\"
+    def __init__(self):
+        self._positions = {"AAPL": 500, "MSFT": -200, "GOOGL": 100}
+
+    def on_tick(self, tick: Tick) -> None:
+        pos = self._positions.get(tick.symbol, 0)
+        if pos != 0:
+            pnl = pos * tick.mid
+            print(f"  [RISK]      {tick.symbol:6} position={pos:+5}  mark_value=${pnl:>12,.2f}")
+
+
+class AlertHandler(TickHandler):
+    \"\"\"Fires an alert if the spread widens beyond a threshold.\"\"\"
+    SPREAD_THRESHOLD = 0.10
+
+    def on_tick(self, tick: Tick) -> None:
+        if tick.spread > self.SPREAD_THRESHOLD:
+            print(f"  [ALERT] ⚠  {tick.symbol:6} wide spread: {tick.spread:.4f} > {self.SPREAD_THRESHOLD}")
+
+
+# ── Subject (the feed handler / publisher) ────────────────────
+class MarketDataFeed:
+    \"\"\"
+    Receives ticks from the exchange and notifies all registered handlers.
+    This is the SUBJECT in the observer pattern.
+    \"\"\"
+    def __init__(self):
+        self._handlers: list[TickHandler] = []
+
+    def subscribe(self, handler: TickHandler) -> None:
+        self._handlers.append(handler)
+        print(f"  Subscribed: {handler.__class__.__name__}")
+
+    def unsubscribe(self, handler: TickHandler) -> None:
+        self._handlers.remove(handler)
+
+    def publish(self, tick: Tick) -> None:
+        \"\"\"Called by the network layer when a tick arrives from the exchange.\"\"\"
+        for handler in self._handlers:
+            handler.on_tick(tick)
+
+
+# ── Simulate a live feed ─────────────────────────────────────
+if __name__ == "__main__":
+    feed = MarketDataFeed()
+    feed.subscribe(BlotterService())
+    feed.subscribe(RiskEngineHandler())
+    feed.subscribe(AlertHandler())
+
+    symbols = {
+        "AAPL":  {"base": 185.50},
+        "MSFT":  {"base": 380.10},
+        "GOOGL": {"base": 141.20},
+    }
+
+    print("\\n=== Market Data Feed (5 ticks) ===")
+    for i in range(5):
+        sym   = random.choice(list(symbols.keys()))
+        base  = symbols[sym]["base"]
+        mid   = base + random.gauss(0, 0.05)
+        # Occasionally widen the spread to trigger the alert
+        half_spread = 0.06 if random.random() < 0.2 else 0.01
+        tick = Tick(
+            symbol=sym,
+            bid=round(mid - half_spread, 4),
+            ask=round(mid + half_spread, 4),
+            size=random.randint(100, 1000)
+        )
+        print(f"\\nTick #{i+1}: {tick.symbol}")
+        feed.publish(tick)
+        time.sleep(0.3)
+\"\"\")
+    ok(f"Observer pattern code: {observer_file}")
+
+    print(f"""
+{BOLD}── Run the observer pattern: ───────────────────────────{RESET}
+{CYAN}       python3 {observer_file}{RESET}
+
+{BOLD}── What to notice: ─────────────────────────────────────{RESET}
+  MarketDataFeed (subject) does not know what its subscribers do.
+  You can add a new service (e.g. SurveillanceHandler) without
+  changing MarketDataFeed at all — just subscribe() it.
+  This is exactly how production market data systems are structured.
+
+{BOLD}── Observer pattern in your role ───────────────────────{RESET}
+  When a market data feed goes down:
+  - ALL subscribers stop receiving updates simultaneously
+  - Risk engine uses stale prices → wider risk margins
+  - Blotter shows stale quotes → traders notice
+  - PnL calculator shows last known values
+  This is why a feed outage affects so many services at once.
+""")
+
+
 def launch_scenario_99():
     header("Scenario 99 — ALL Python & Bash Scenarios")
     for fn in [launch_scenario_1, launch_scenario_2, launch_scenario_3,
-               launch_scenario_4, launch_scenario_5, launch_scenario_6]:
+               launch_scenario_4, launch_scenario_5, launch_scenario_6,
+               launch_scenario_7, launch_scenario_8]:
         fn()
         time.sleep(0.3)
 
@@ -727,6 +1071,8 @@ SCENARIO_MAP = {
     4:  (launch_scenario_4, "P-04  REST API client"),
     5:  (launch_scenario_5, "P-05  FIX message parser"),
     6:  (launch_scenario_6, "P-06  Kafka lag monitor"),
+    7:  (launch_scenario_7, "P-07  OOP — class hierarchy & strategy pattern"),
+    8:  (launch_scenario_8, "P-08  OOP — observer pattern (market data)"),
     99: (launch_scenario_99, "     ALL scenarios"),
 }
 
