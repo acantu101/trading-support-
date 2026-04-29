@@ -204,7 +204,7 @@ def launch_scenario_2():
 
         # Add Order message (type A)
         # >: big-endian, H=uint16, Q=uint64, 6s=6 bytes, Q=uint64, c=char, I=uint32, 8s=8 bytes, I=uint32
-        msg = struct.pack(">H", 36)  # message length
+        msg = struct.pack(">H", 40)  # message length (payload = 1+8+6+8+1+4+8+4 = 40 bytes)
         msg += b"A"                   # message type
         msg += struct.pack(">Q", seq)  # sequence number
         msg += struct.pack(">6s", ts_ns.to_bytes(6, "big"))  # timestamp (6 bytes)
@@ -263,7 +263,7 @@ with open(ITCH_FILE, "rb") as f:
         msg_type = bytes([payload[0]])
         type_name = MSG_TYPES.get(msg_type, f"Unknown({{msg_type}})")
 
-        if msg_type == b"A" and length >= 35:
+        if msg_type == b"A" and length >= 40:
             seq       = struct.unpack(">Q", payload[1:9])[0]
             ts_bytes  = payload[9:15]
             ts_ns     = int.from_bytes(ts_bytes, "big")
@@ -271,7 +271,7 @@ with open(ITCH_FILE, "rb") as f:
             side      = SIDES.get(bytes([payload[23]]), "?")
             shares    = struct.unpack(">I", payload[24:28])[0]
             stock     = payload[28:36].decode("ascii").strip()
-            price_raw = struct.unpack(">I", payload[36:40])[0] if length >= 40 else 0
+            price_raw = struct.unpack(">I", payload[36:40])[0]
             price     = price_raw / 10000.0
             ts_sec    = ts_ns / 1_000_000_000
             h, rem    = divmod(int(ts_sec), 3600)
