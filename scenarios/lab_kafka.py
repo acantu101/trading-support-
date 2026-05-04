@@ -765,10 +765,794 @@ print("\\nIn practice: idempotent producer + manual offset commit covers 90%% of
 """)
 
 
+# ══════════════════════════════════════════════
+#  SCENARIO 7 — Market Data Feed → Kafka Pipeline
+# ══════════════════════════════════════════════
+
+def launch_scenario_7():
+    header("Scenario K-07 — Market Data Feed Handler → Kafka")
+    print("  The feed handler receives raw UDP multicast ticks,")
+    print("  normalizes them, and publishes to a Kafka topic.\n")
+    print("  This is the entry point of the market data pipeline.\n")
+
+    # Generate a simulated raw feed log (what comes off the wire)
+    raw_feed = DIRS["data"] / "raw_feed.log"
+    now = datetime.now()
+    lines = []
+    symbols = ["AAPL", "MSFT", "GOOG", "AMZN", "SPY"]
+    prices  = {"AAPL": 185.00, "MSFT": 420.00, "GOOG": 175.00, "AMZN": 198.00, "SPY": 520.00}
+    for i in range(30):
+        ts = (now + timedelta(milliseconds=i * 50)).strftime("%H:%M:%S.%f")[:-3]
+        sym = symbols[i % len(symbols)]
+        prices[sym] += random.uniform(-0.05, 0.05)
+        seq = 1000 + i
+        # Pipe-delimited raw format (as if tr '\001' '|' was applied)
+        lines.append(f"SEQ={seq}|TS={ts}|SYM={sym}|BID={prices[sym]-0.05:.2f}|ASK={prices[sym]+0.05:.2f}|BIDSZ={random.randint(100,1000)}|ASKSZ={random.randint(100,1000)}|EXCH=NASDAQ")
+    raw_feed.write_text("\n".join(lines) + "\n")
+    ok(f"Raw feed log (30 ticks): {raw_feed}")
+
+    # Topic config for market data
+    topic_cfg = DIRS["config"] / "market_data_topic.properties"
+    topic_cfg.write_text("""\
+# Kafka topic: market-data.ticks
+# ================================
+# High-throughput, short-retention, many partitions
+
+# Create command:
+# kafka-topics.sh --bootstrap-server localhost:9092 --create \\
+#   --topic market-data.ticks \\
+#   --partitions 24 \\
+#   --replication-factor 3 \\
+#   --config retention.ms=3600000 \\        # 1 hour — market data goes stale fast
+#   --config min.insync.replicas=2 \\
+#   --config compression.type=lz4 \\        # compress — ticks are repetitive
+#   --config max.message.bytes=1048576
+
+# Why different from trade-executions topic?
+#   partitions=24        market data is higher volume than trades
+#   retention=1hr        yesterday's tick is worthless for real-time consumers
+#                        (analytics/storage pipeline persists to HDF5/DB separately)
+#   compression=lz4      tick data is very repetitive — compresses 70-80%
+#   key=symbol           same symbol → same partition → ordered L2 updates
+
+# Downstream consumers of market-data.ticks:
+#   risk-engine-group       → real-time MTM, margin calculation
+#   algo-trading-group      → signal generation, execution algo pricing
+#   tick-storage-group      → write to HDF5 / TimescaleDB for backtests
+#   vwap-calc-group         → streaming VWAP aggregation
+#   market-making-group     → quote generation
+""")
+    ok(f"Market data topic config: {topic_cfg}")
+
+    # Feed handler script — reads raw feed, normalizes, publishes to Kafka
+    feed_handler = DIRS["scripts"] / "feed_handler.py"
+    feed_handler.write_text(f"""\
+#!/usr/bin/env python3
+\"\"\"
+K-07: Market Data Feed Handler
+Reads raw feed log, normalizes ticks, publishes to Kafka topic.
+
+In production: this reads from a live UDP multicast socket instead of a file.
+DRY_RUN=True simulates Kafka publish without a real broker.
+\"\"\"
+import json, time
+from datetime import datetime
+
+RAW_FEED  = '{raw_feed}'
+TOPIC     = 'market-data.ticks'
+BROKER    = 'localhost:9092'
+DRY_RUN   = True   # set False to use real Kafka
+
+published = 0
+errors    = 0
+lag_us    = []
+
+print(f"Feed Handler starting | topic={{TOPIC}} | dry_run={{DRY_RUN}}\\n")
+print(f"  {{' SEQ':>6}}  {{'SYM':<5}}  {{'BID':>8}}  {{'ASK':>8}}  {{'SPREAD':>7}}  {{'PART':>5}}  STATUS")
+print(f"  " + "-"*60)
+
+with open(RAW_FEED) as f:
+    for line in f:
+        line = line.strip()
+        if not line:
+            continue
+
+        # ── Parse raw feed format ──────────────────────────
+        try:
+            fields = dict(p.split('=', 1) for p in line.split('|') if '=' in p)
+            seq  = fields['SEQ']
+            sym  = fields['SYM']
+            bid  = float(fields['BID'])
+            ask  = float(fields['ASK'])
+            bsz  = int(fields['BIDSZ'])
+            asz  = int(fields['ASKSZ'])
+            exch = fields.get('EXCH', '?')
+            ts   = fields['TS']
+        except Exception as e:
+            errors += 1
+            print(f"  PARSE ERROR: {{e}} | line={{line[:60]}}")
+            continue
+
+        # ── Validate ───────────────────────────────────────
+        spread = round(ask - bid, 4)
+        if bid >= ask:
+            print(f"  SEQ={{seq}} ⚠ CROSSED BOOK (bid={{bid}} >= ask={{ask}}) — routing to DLQ")
+            errors += 1
+            continue
+        if spread > 1.0:
+            print(f"  SEQ={{seq}} ⚠ WIDE SPREAD ({{spread:.4f}}) — flagging for review")
+
+        # ── Normalize to internal format ───────────────────
+        tick = {{
+            "seq":       int(seq),
+            "symbol":    sym,
+            "bid":       bid,
+            "ask":       ask,
+            "bid_size":  bsz,
+            "ask_size":  asz,
+            "mid":       round((bid + ask) / 2, 4),
+            "spread":    spread,
+            "exchange":  exch,
+            "recv_ts":   datetime.now().isoformat(),
+        }}
+
+        # Partition by symbol (consistent routing)
+        partition = abs(hash(sym)) % 24
+
+        if DRY_RUN:
+            print(f"  {{seq:>6}}  {{sym:<5}}  {{bid:>8.2f}}  {{ask:>8.2f}}  {{spread:>7.4f}}  p{{partition:>3}}  OK")
+        else:
+            from kafka import KafkaProducer
+            producer = KafkaProducer(
+                bootstrap_servers=[BROKER],
+                value_serializer=lambda v: json.dumps(v).encode(),
+                key_serializer=lambda k: k.encode(),
+                acks='all',
+                enable_idempotence=True,
+            )
+            future = producer.send(TOPIC, key=sym, value=tick)
+            meta   = future.get(timeout=5)
+            print(f"  {{seq:>6}}  {{sym:<5}}  p{{meta.partition:>3}}@{{meta.offset}}  OK")
+
+        published += 1
+        time.sleep(0.005)   # simulate 50ms inter-message interval in slow-motion
+
+print(f"\\n  Published: {{published}}  Errors: {{errors}}")
+print(f"  Key routing: symbol → consistent partition → ordered L2 updates per symbol")
+print(f"  In production: feed handler processes ~100k-1M ticks/second at market open")
+""")
+    ok(f"Feed handler: {feed_handler}")
+
+    print(f"""
+{BOLD}── Architecture ────────────────────────────────────────{RESET}
+  UDP Multicast (exchange)
+       ↓  raw pipe-delimited ticks
+  Feed Handler (feed_handler.py)
+       ↓  validate, normalize, partition by symbol
+  Kafka topic: market-data.ticks (24 partitions)
+       ↓  consumers subscribe in parallel
+  ┌────────────────────────────────────────┐
+  │ risk-engine-group  (real-time MTM)     │
+  │ algo-trading-group (signal generation) │
+  │ tick-storage-group (HDF5 / TimescaleDB)│
+  │ vwap-calc-group    (streaming VWAP)    │
+  └────────────────────────────────────────┘
+
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Read the raw feed log — understand the format
+{CYAN}       cat {raw_feed}{RESET}
+
+  2. Run the feed handler — watch normalization + routing
+{CYAN}       python3 {feed_handler}{RESET}
+
+  3. Read the topic configuration
+{CYAN}       cat {topic_cfg}{RESET}
+
+  4. Use awk to count ticks per symbol from the raw feed
+{CYAN}       awk -F'|' '{{for(i=1;i<=NF;i++) if($i~/^SYM=/) syms[substr($i,5)]++}}
+       END {{for(s in syms) print syms[s], s}}' {raw_feed} | sort -rn{RESET}
+
+{BOLD}── Key Interview Points ───────────────────────────────{RESET}
+  • Feed handler is the bridge: UDP multicast → Kafka
+  • Normalize early: all downstream consumers get clean, consistent data
+  • Partition by symbol: guaranteed ordering of L2 updates per symbol
+  • market-data.ticks: short retention (1hr) — analytics pipeline writes to permanent storage
+  • Validate at ingestion: crossed book, wide spread → DLQ before polluting consumers
+""")
+
+
+# ══════════════════════════════════════════════
+#  SCENARIO 8 — Market Data Consumer Lag
+# ══════════════════════════════════════════════
+
+def launch_scenario_8():
+    header("Scenario K-08 — Market Data Consumer Lag at Market Open")
+    print("  At 09:30 the tick rate spikes 10x. Consumers can't keep up.")
+    print("  Lag grows → downstream systems get stale prices → risk breach.\n")
+
+    # Realistic lag snapshot during market open burst
+    lag_file = DIRS["data"] / "market_data_lag_snapshot.txt"
+    lag_file.write_text("""\
+GROUP               TOPIC                PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG     CONSUMER-ID
+risk-engine-group   market-data.ticks    0          450200          450250          50      risk-1-a1b2
+risk-engine-group   market-data.ticks    1          448100          449800          1700    risk-1-a1b2
+risk-engine-group   market-data.ticks    2          451000          451005          5       risk-2-c3d4
+risk-engine-group   market-data.ticks    3          445000          450200          5200    risk-2-c3d4
+risk-engine-group   market-data.ticks    4          449000          449010          10      risk-3-e5f6
+risk-engine-group   market-data.ticks    5          440000          450500          10500   risk-3-e5f6
+risk-engine-group   market-data.ticks    6          448500          448510          10      -
+risk-engine-group   market-data.ticks    7          447000          451000          4000    -
+risk-engine-group   market-data.ticks    8          450000          450020          20      -
+algo-trading-group  market-data.ticks    0          450248          450250          2       algo-1-g7h8
+algo-trading-group  market-data.ticks    1          449795          449800          5       algo-1-g7h8
+algo-trading-group  market-data.ticks    2          451003          451005          2       algo-2-i9j0
+algo-trading-group  market-data.ticks    3          450198          450200          2       algo-2-i9j0
+""")
+    ok(f"Market data lag snapshot: {lag_file}")
+
+    analyze = DIRS["scripts"] / "market_data_lag_analyzer.py"
+    analyze.write_text(f"""\
+#!/usr/bin/env python3
+\"\"\"K-08: Analyze market data consumer group lag — identify high-lag groups.\"\"\"
+
+LAG_FILE       = '{lag_file}'
+STALE_THRESHOLD = 1000   # lag > this = prices are stale for that group
+
+print(f"Market Data Consumer Lag Analysis")
+print(f"Stale threshold: {{STALE_THRESHOLD}} messages\\n")
+
+groups = {{}}
+with open(LAG_FILE) as f:
+    for i, line in enumerate(f):
+        if i == 0: continue
+        parts = line.split()
+        if len(parts) < 6: continue
+        group, topic, part = parts[0], parts[1], parts[2]
+        lag_str  = parts[5]
+        consumer = parts[6] if len(parts) > 6 else '-'
+        try:
+            lag = int(lag_str)
+        except ValueError:
+            continue
+        if group not in groups:
+            groups[group] = {{'total_lag': 0, 'max_lag': 0, 'unassigned': 0, 'stale': 0}}
+        groups[group]['total_lag'] += lag
+        groups[group]['max_lag']    = max(groups[group]['max_lag'], lag)
+        if consumer == '-':
+            groups[group]['unassigned'] += 1
+        if lag > STALE_THRESHOLD:
+            groups[group]['stale'] += 1
+            print(f"  ⚠ {{group:<22}} partition={{part:<3}} lag={{lag:>7}} → STALE PRICES")
+
+print()
+for group, stats in groups.items():
+    health = "✅ OK" if stats['max_lag'] < STALE_THRESHOLD else "🔴 STALE"
+    print(f"  {{group:<22}} total_lag={{stats['total_lag']:>8}}  max={{stats['max_lag']:>6}}  unassigned={{stats['unassigned']}}  {{health}}")
+
+print(f\"\"\"
+── Root Cause: risk-engine-group ───────────────────────────────
+  Partitions 6,7,8: NO CONSUMER (-) — only 3 workers for 9 partitions
+  Partitions 1,3,5: HIGH LAG (1700-10500) — consumers can't keep up with burst
+
+── Business Impact ─────────────────────────────────────────────
+  risk-engine-group lag=10500 → risk engine sees prices 10,000+ ticks old
+  At 200 ticks/sec = ~52 seconds stale → MTM wrong → margin calls wrong
+  algo-trading-group lag=5 → OK, algos getting current prices
+
+── Fix ─────────────────────────────────────────────────────────
+  Immediate: add 6 more consumers to risk-engine-group (match 9 partitions)
+  Short-term: tune max.poll.records=50 (smaller batches, faster commits)
+  Long-term: pre-warm consumers before market open (09:25 startup)
+  Consider: separate topic per asset class (equities vs futures) for isolation
+\"\"\")
+""")
+    ok(f"Lag analyzer: {analyze}")
+
+    print(f"""
+{BOLD}── Lag snapshot (market open burst): ──────────────────{RESET}
+{CYAN}       cat {lag_file}{RESET}
+
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Analyze the lag — identify which groups have stale prices
+{CYAN}       python3 {analyze}{RESET}
+
+  2. Find the worst partition with awk
+{CYAN}       awk 'NR>1 {{print $6, $1, "p"$3}}' {lag_file} | sort -rn | head -5{RESET}
+
+  3. On a real cluster:
+{CYAN}       watch -n 5 "kafka-consumer-groups.sh \\
+         --bootstrap-server localhost:9092 \\
+         --group risk-engine-group --describe"{RESET}
+
+{BOLD}── Key Interview Points ───────────────────────────────{RESET}
+  • Market data lag = stale prices = wrong risk calculations = real money at risk
+  • rule: consumers_in_group ≤ partitions (extra consumers sit idle doing nothing)
+  • Pre-warm before market open — don't cold-start consumers at 09:30
+  • Separate consumer groups per use case: risk ≠ algo ≠ storage
+  • Lag on market-data is more urgent than lag on trade-executions
+    (stale prices → bad fills → immediate P&L impact)
+""")
+
+
+# ══════════════════════════════════════════════
+#  SCENARIO 9 — Data Pipeline: Tick Storage
+# ══════════════════════════════════════════════
+
+def launch_scenario_9():
+    header("Scenario K-09 — Data Pipeline: Kafka → Tick Storage")
+    print("  The tick-storage pipeline consumes market-data.ticks")
+    print("  and writes to persistent storage for backtests and analytics.\n")
+
+    # Generate a simulated Kafka topic log (messages with offsets)
+    topic_log = DIRS["data"] / "market_data_ticks_topic.json"
+    ticks = []
+    now = datetime.now()
+    syms   = ["AAPL", "MSFT", "GOOG", "AMZN", "SPY"]
+    prices = {"AAPL": 185.00, "MSFT": 420.00, "GOOG": 175.00, "AMZN": 198.00, "SPY": 520.00}
+    for i in range(50):
+        sym = syms[i % len(syms)]
+        prices[sym] += random.uniform(-0.1, 0.1)
+        ts  = (now + timedelta(milliseconds=i * 50)).isoformat()
+        ticks.append({
+            "partition": abs(hash(sym)) % 24,
+            "offset":    10000 + i,
+            "key":       sym,
+            "value": {
+                "seq":      1000 + i,
+                "symbol":   sym,
+                "bid":      round(prices[sym] - 0.05, 2),
+                "ask":      round(prices[sym] + 0.05, 2),
+                "mid":      round(prices[sym], 2),
+                "spread":   0.10,
+                "exchange": "NASDAQ",
+                "recv_ts":  ts,
+            }
+        })
+    import json as _json
+    topic_log.write_text(_json.dumps(ticks, indent=2))
+    ok(f"Simulated topic log (50 ticks): {topic_log}")
+
+    storage_out = DIRS["data"] / "tick_storage_output.csv"
+
+    pipeline = DIRS["scripts"] / "tick_storage_pipeline.py"
+    pipeline.write_text(f"""\
+#!/usr/bin/env python3
+\"\"\"
+K-09: Tick Storage Pipeline
+Consumes from market-data.ticks (simulated), writes to CSV/HDF5.
+
+Pattern: consume → validate → transform → store → commit offset
+DRY_RUN=True uses simulated topic log. Set False for real Kafka.
+\"\"\"
+import json, csv, time
+from datetime import datetime
+
+TOPIC_LOG  = '{topic_log}'   # simulated Kafka messages
+OUTPUT_CSV = '{storage_out}'
+DRY_RUN    = True
+
+COMMIT_EVERY = 10   # commit offset every N messages (tunable)
+
+written    = 0
+errors     = 0
+last_offset = {{}}  # partition → offset (simulates committed offsets)
+
+print(f"Tick Storage Pipeline | output={{OUTPUT_CSV}}")
+print(f"Commit interval: every {{COMMIT_EVERY}} messages\\n")
+
+with open(TOPIC_LOG) as f:
+    messages = json.load(f)
+
+with open(OUTPUT_CSV, 'w', newline='') as csvfile:
+    writer = csv.DictWriter(csvfile,
+        fieldnames=['recv_ts', 'symbol', 'bid', 'ask', 'mid', 'spread', 'exchange', 'offset'])
+    writer.writeheader()
+
+    for i, msg in enumerate(messages):
+        partition = msg['partition']
+        offset    = msg['offset']
+        tick      = msg['value']
+
+        # ── Validate ───────────────────────────────────────
+        if tick['bid'] >= tick['ask']:
+            print(f"  [p{{partition}}@{{offset}}] CROSSED — routing to DLQ")
+            errors += 1
+            continue
+
+        # ── Transform: add computed fields ─────────────────
+        tick['spread'] = round(tick['ask'] - tick['bid'], 4)
+
+        # ── Store ──────────────────────────────────────────
+        writer.writerow({{
+            'recv_ts':  tick['recv_ts'],
+            'symbol':   tick['symbol'],
+            'bid':      tick['bid'],
+            'ask':      tick['ask'],
+            'mid':      tick['mid'],
+            'spread':   tick['spread'],
+            'exchange': tick['exchange'],
+            'offset':   offset,
+        }})
+        written += 1
+
+        # ── Commit offset (manual, every N messages) ───────
+        if written % COMMIT_EVERY == 0:
+            last_offset[partition] = offset
+            print(f"  Committed offset p{{partition}}@{{offset}} ({{written}} ticks stored)")
+
+    # Final commit
+    for p, o in last_offset.items():
+        print(f"  Final commit p{{p}}@{{o}}")
+
+print(f"\\n── Pipeline Summary ──────────────────────────────────")
+print(f"  Messages processed : {{written + errors}}")
+print(f"  Written to storage : {{written}}")
+print(f"  Errors (DLQ)       : {{errors}}")
+print(f"  Output file        : {{OUTPUT_CSV}}")
+print(f\"\"\"
+── Pipeline Pattern: at-least-once with idempotent writes ──────
+  1. Consume batch from Kafka (max.poll.records messages)
+  2. Validate each message (crossed book → DLQ, missing fields → DLQ)
+  3. Transform (normalize, enrich, compute derived fields)
+  4. Write to storage (CSV/HDF5/TimescaleDB)
+     - Use UPSERT or deduplication key to handle reprocessing safely
+  5. Commit Kafka offset ONLY after successful write
+     If the writer crashes before commit → replay from last committed offset
+     Storage must handle duplicate writes (idempotent storage)
+
+── Why commit AFTER write? ──────────────────────────────────────
+  If you commit BEFORE writing to storage:
+    Kafka thinks you processed the message
+    Writer crashes → message is LOST from storage forever
+  If you commit AFTER writing to storage:
+    Crash before commit → message replayed → may write twice
+    Storage must be idempotent (UPSERT by (symbol, timestamp))
+  This is at-least-once delivery: storage gets ≥1 write per tick
+\"\"\")
+""")
+    ok(f"Pipeline script: {pipeline}")
+
+    print(f"""
+{BOLD}── Architecture ────────────────────────────────────────{RESET}
+  market-data.ticks (Kafka)
+       ↓  tick-storage-group consumes
+  tick_storage_pipeline.py
+       ↓  validate → transform → write
+  tick_storage_output.csv  (production: HDF5 / TimescaleDB / KDB+)
+       ↓
+  Backtest engine / Quant research queries
+
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Run the pipeline — watch it consume, validate, and store
+{CYAN}       python3 {pipeline}{RESET}
+
+  2. Inspect the output CSV
+{CYAN}       cat {storage_out}{RESET}
+
+  3. Compute VWAP per symbol from the stored ticks using awk
+{CYAN}       awk -F',' 'NR>1 {{vol[$(3)]+=$(4); px[$(3)]+=$(4)*$(6); n[$(3)]++}}
+       END {{for(s in vol) print s, px[s]/vol[s]}}' {storage_out}{RESET}
+
+{BOLD}── Key Interview Points ───────────────────────────────{RESET}
+  • Commit offset AFTER writing to storage — never before
+  • Storage must be idempotent (UPSERT) to handle replay safely
+  • DLQ = dead letter queue: bad messages go there, not silently dropped
+  • Pipeline must survive broker restart without data loss or duplication
+  • Tick storage retention: Kafka 1hr → HDF5/DB forever (different retention per tier)
+""")
+
+
+# ══════════════════════════════════════════════
+#  SCENARIO 10 — Streaming VWAP Pipeline
+# ══════════════════════════════════════════════
+
+def launch_scenario_10():
+    header("Scenario K-10 — Streaming VWAP Pipeline (Consume-Transform-Produce)")
+    print("  Consume trade-executions, compute running VWAP per symbol,")
+    print("  publish results to market-data.vwap topic.\n")
+
+    # Generate simulated trade events
+    trades_log = DIRS["data"] / "trade_executions_topic.json"
+    import json as _json
+    trades = []
+    symbols = ["AAPL", "MSFT", "GOOG"]
+    base    = {"AAPL": 185.0, "MSFT": 420.0, "GOOG": 175.0}
+    now     = datetime.now()
+    for i in range(40):
+        sym = symbols[i % len(symbols)]
+        px  = round(base[sym] + random.gauss(0, 0.5), 2)
+        qty = random.choice([100, 200, 300, 500, 1000])
+        trades.append({
+            "partition": abs(hash(sym)) % 12,
+            "offset":    5000 + i,
+            "key":       sym,
+            "value": {
+                "seq":    500 + i,
+                "symbol": sym,
+                "side":   random.choice(["BUY", "SELL"]),
+                "price":  px,
+                "qty":    qty,
+                "status": "FILLED",
+                "ts":     (now + timedelta(milliseconds=i * 100)).isoformat(),
+            }
+        })
+    trades_log.write_text(_json.dumps(trades, indent=2))
+    ok(f"Simulated trade-executions topic: {trades_log}")
+
+    pipeline = DIRS["scripts"] / "vwap_pipeline.py"
+    pipeline.write_text(f"""\
+#!/usr/bin/env python3
+\"\"\"
+K-10: Streaming VWAP Pipeline — consume-transform-produce pattern.
+Reads trade-executions, maintains running VWAP per symbol,
+publishes updated VWAP to market-data.vwap topic.
+
+This is a stateful streaming job — maintains state (VWAP) across messages.
+\"\"\"
+import json
+from collections import defaultdict
+
+TRADES_LOG = '{trades_log}'
+DRY_RUN    = True
+
+# State: running VWAP per symbol
+total_notional = defaultdict(float)   # sum(price * qty)
+total_volume   = defaultdict(int)     # sum(qty)
+trade_count    = defaultdict(int)
+
+vwap_output = []   # simulated output topic messages
+
+print(f"Streaming VWAP Pipeline | input=trade-executions | output=market-data.vwap\\n")
+print(f"  {{' SEQ':>5}}  {{'SYM':<5}}  {{'SIDE':<5}}  {{'PX':>8}}  {{'QTY':>6}}  {{'VWAP':>10}}  {{'COUNT':>6}}")
+print(f"  " + "-"*60)
+
+with open(TRADES_LOG) as f:
+    messages = json.load(f)
+
+for msg in messages:
+    t = msg['value']
+    if t.get('status') != 'FILLED':
+        continue
+
+    sym = t['symbol']
+    px  = t['price']
+    qty = t['qty']
+
+    # Update running VWAP state
+    total_notional[sym] += px * qty
+    total_volume[sym]   += qty
+    trade_count[sym]    += 1
+
+    vwap = round(total_notional[sym] / total_volume[sym], 4)
+
+    # Output message to market-data.vwap topic
+    vwap_msg = {{
+        "symbol":       sym,
+        "vwap":         vwap,
+        "total_volume": total_volume[sym],
+        "trade_count":  trade_count[sym],
+        "last_price":   px,
+        "ts":           t['ts'],
+    }}
+    vwap_output.append(vwap_msg)
+
+    print(f"  {{t['seq']:>5}}  {{sym:<5}}  {{t['side']:<5}}  {{px:>8.2f}}  {{qty:>6}}  {{vwap:>10.4f}}  {{trade_count[sym]:>6}}")
+
+print(f"\\n── Final VWAP per Symbol ────────────────────────────")
+for sym in sorted(total_volume.keys()):
+    vwap = round(total_notional[sym] / total_volume[sym], 4)
+    print(f"  {{sym:<6}}  VWAP={{vwap:.4f}}  volume={{total_volume[sym]:,}}  trades={{trade_count[sym]}}")
+
+print(f\"\"\"
+── Consume-Transform-Produce Pattern ───────────────────────────
+  INPUT:   trade-executions topic (partitioned by symbol)
+  PROCESS: maintain running VWAP state per symbol
+  OUTPUT:  market-data.vwap topic (used by risk, algos, display)
+
+  In production (with real Kafka):
+    Use Kafka Streams or Faust for stateful stream processing
+    State stored in a local RocksDB store (fast, crash-recoverable)
+    KTable: symbol → {{vwap, volume, count}} updated per message
+    Changelog topic: state changes persisted to Kafka for recovery
+
+── Why symbol partitioning matters here ───────────────────────
+  All AAPL trades land on partition 3 (hash("AAPL") % 12)
+  The VWAP consumer for partition 3 sees ALL AAPL trades in order
+  → it can maintain correct VWAP without coordinating with other consumers
+  If AAPL trades were spread across partitions: VWAP would be wrong
+    (each consumer only sees partial volume → partial VWAP)
+
+── Stateful vs Stateless Pipelines ────────────────────────────
+  Stateless: each message processed independently (tick storage, feed handler)
+  Stateful:  maintain state across messages (VWAP, position, OFI)
+  Stateful pipelines must handle: state recovery on restart, late arrivals,
+  windowing (1min VWAP vs 5min VWAP vs daily VWAP)
+\"\"\")
+""")
+    ok(f"VWAP pipeline: {pipeline}")
+
+    print(f"""
+{BOLD}── Architecture ────────────────────────────────────────{RESET}
+  trade-executions (Kafka) ─── partitioned by symbol ───→
+  vwap_pipeline.py (stateful) → running VWAP per symbol
+  market-data.vwap (Kafka) ─→ risk-engine, algo-trading, display
+
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Run the VWAP pipeline
+{CYAN}       python3 {pipeline}{RESET}
+
+  2. Inspect the raw trade events
+{CYAN}       python3 -c "import json; [print(m['value']['symbol'], m['value']['price'], m['value']['qty']) for m in json.load(open('{trades_log}'))]"{RESET}
+
+  3. Compute VWAP manually with awk to verify
+{CYAN}       python3 -c "import json; \\
+       [print(m['value']['symbol'], m['value']['price'], m['value']['qty']) \\
+        for m in json.load(open('{trades_log}'))]" | \\
+       awk '{{n[$(1)]+=$(2)*$(3); v[$(1)]+=$(3)}} END {{for(s in v) print s, n[s]/v[s]}}'{RESET}
+
+{BOLD}── Key Interview Points ───────────────────────────────{RESET}
+  • Stateful pipelines require state recovery — what happens if the job restarts?
+  • Symbol partitioning ensures one consumer owns all state for a symbol
+  • VWAP is the most common streaming aggregation in trading Kafka pipelines
+  • Kafka Streams / Faust handle windowing, state stores, and changelog topics
+  • This same pattern applies to: running P&L, position aggregation, OFI
+""")
+
+
+# ══════════════════════════════════════════════
+#  SCENARIO 11 — Dead Letter Queue
+# ══════════════════════════════════════════════
+
+def launch_scenario_11():
+    header("Scenario K-11 — Dead Letter Queue (DLQ) Pattern")
+    print("  Bad messages crash pipeline jobs if not handled.")
+    print("  Route failed messages to a DLQ topic instead of losing them.\n")
+
+    # Generate mixed good/bad messages
+    import json as _json
+    mixed_log = DIRS["data"] / "mixed_ticks_topic.json"
+    msgs = [
+        {"offset": 1,  "value": {"seq": 1, "symbol": "AAPL", "bid": 184.90, "ask": 185.10, "exchange": "NASDAQ"}},
+        {"offset": 2,  "value": {"seq": 2, "symbol": "MSFT", "bid": 419.80, "ask": 420.20, "exchange": "NASDAQ"}},
+        {"offset": 3,  "value": {"seq": 3, "symbol": "AAPL", "bid": 185.20, "ask": 185.00, "exchange": "NASDAQ"}},   # CROSSED
+        {"offset": 4,  "value": {"seq": 4, "symbol": "???",  "bid": 0.0,    "ask": 0.0,    "exchange": "UNKNOWN"}},  # BAD SYMBOL
+        {"offset": 5,  "value": {"seq": 5, "symbol": "GOOG", "bid": 174.90, "ask": 175.10, "exchange": "NYSE"}},
+        {"offset": 6,  "value": {"seq": 6, "symbol": "TSLA", "bid": -50.0,  "ask": 240.00, "exchange": "NASDAQ"}},   # NEGATIVE BID
+        {"offset": 7,  "value": {"seq": 7, "symbol": "AMZN", "bid": 197.90, "ask": 198.10, "exchange": "NASDAQ"}},
+        {"offset": 8,  "value": {"seq": 8}},                                                                          # MISSING FIELDS
+        {"offset": 9,  "value": {"seq": 9, "symbol": "SPY",  "bid": 519.90, "ask": 520.10, "exchange": "BATS"}},
+        {"offset": 10, "value": {"seq": 10,"symbol": "AAPL", "bid": 184.95, "ask": 185.05, "exchange": "NASDAQ"}},
+    ]
+    mixed_log.write_text(_json.dumps(msgs, indent=2))
+    ok(f"Mixed messages (with bad ones): {mixed_log}")
+
+    dlq_out  = DIRS["data"] / "dlq_market_data.json"
+    good_out = DIRS["data"] / "good_ticks.json"
+
+    dlq_script = DIRS["scripts"] / "dlq_handler.py"
+    dlq_script.write_text(f"""\
+#!/usr/bin/env python3
+\"\"\"
+K-11: Dead Letter Queue Handler
+Processes market-data.ticks with validation; routes bad messages to DLQ.
+Bad messages never crash the pipeline — they get quarantined for review.
+\"\"\"
+import json
+
+TOPIC_LOG = '{mixed_log}'
+GOOD_OUT  = '{good_out}'
+DLQ_OUT   = '{dlq_out}'
+
+VALID_SYMBOLS = {{"AAPL","MSFT","GOOG","AMZN","SPY","TSLA","QQQ","NVDA"}}
+
+good_msgs = []
+dlq_msgs  = []
+
+print(f"Processing messages | good→{{GOOD_OUT}} | bad→DLQ {{DLQ_OUT}}\\n")
+print(f"  {{'OFFSET':>6}}  {{'SYM':<6}}  {{'BID':>8}}  {{'ASK':>8}}  STATUS")
+print(f"  " + "-"*50)
+
+with open(TOPIC_LOG) as f:
+    messages = json.load(f)
+
+for msg in messages:
+    offset = msg.get('offset', '?')
+    tick   = msg.get('value', {{}})
+
+    # ── Validation rules ───────────────────────────────
+    error = None
+    sym   = tick.get('symbol', '')
+    bid   = tick.get('bid')
+    ask   = tick.get('ask')
+
+    if not sym or bid is None or ask is None:
+        error = "MISSING_FIELDS"
+    elif sym not in VALID_SYMBOLS:
+        error = f"UNKNOWN_SYMBOL:{{sym}}"
+    elif bid < 0 or ask < 0:
+        error = f"NEGATIVE_PRICE bid={{bid}} ask={{ask}}"
+    elif bid >= ask:
+        error = f"CROSSED_BOOK bid={{bid}} >= ask={{ask}}"
+
+    if error:
+        dlq_entry = {{
+            "original_offset": offset,
+            "error":           error,
+            "raw_message":     tick,
+            "dlq_ts":          "2026-05-04T09:30:00",
+        }}
+        dlq_msgs.append(dlq_entry)
+        print(f"  {{offset:>6}}  {{str(sym):<6}}  {{'N/A':>8}}  {{'N/A':>8}}  🔴 DLQ: {{error}}")
+    else:
+        good_msgs.append(tick)
+        print(f"  {{offset:>6}}  {{sym:<6}}  {{bid:>8.2f}}  {{ask:>8.2f}}  ✅ OK")
+
+with open(GOOD_OUT, 'w') as f:
+    json.dump(good_msgs, f, indent=2)
+with open(DLQ_OUT, 'w') as f:
+    json.dump(dlq_msgs, f, indent=2)
+
+print(f"\\n── Summary ─────────────────────────────────────────────")
+print(f"  Total messages : {{len(messages)}}")
+print(f"  Good (stored)  : {{len(good_msgs)}}")
+print(f"  DLQ (bad)      : {{len(dlq_msgs)}}")
+print()
+for d in dlq_msgs:
+    print(f"  DLQ offset={{d['original_offset']:>3}}  error={{d['error']}}")
+
+print(f\"\"\"
+── Dead Letter Queue Pattern ───────────────────────────────────
+  WITHOUT DLQ:  bad message → consumer crashes → lag grows → all processing stops
+  WITH DLQ:     bad message → DLQ topic → pipeline continues → ops team reviews DLQ
+
+  DLQ topic config:
+    name: market-data.ticks.dlq  (or trade-executions.dlq)
+    retention.ms=2592000000      (30 days — long retention for investigation)
+    partitions=3                 (lower volume than main topic)
+
+  DLQ Operations:
+    Monitor DLQ lag daily — growing DLQ = systematic data quality issue
+    Replay from DLQ after fix: kafka-console-consumer | fix | kafka-console-producer
+    Alert if DLQ rate > threshold (e.g. 1% of main topic volume)
+
+  Common causes of messages landing in DLQ:
+    - Exchange sends bad tick (malformed, wrong price)
+    - New instrument not in symbol reference data
+    - Schema change in upstream feed handler (version mismatch)
+    - Upstream bug (negative bid, zero ask)
+\"\"\")
+""")
+    ok(f"DLQ handler: {dlq_script}")
+
+    print(f"""
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Look at the mixed input — spot the bad messages
+{CYAN}       python3 -c "import json; [print(m['offset'], m['value']) for m in json.load(open('{mixed_log}'))]"{RESET}
+
+  2. Run the DLQ handler — watch validation and routing
+{CYAN}       python3 {dlq_script}{RESET}
+
+  3. Inspect what ended up in the DLQ
+{CYAN}       python3 -c "import json; [print(d) for d in json.load(open('{dlq_out}'))]"{RESET}
+
+  4. Count DLQ error types with awk
+{CYAN}       python3 -c "import json; [print(d['error']) for d in json.load(open('{dlq_out}'))]" | sort | uniq -c{RESET}
+
+{BOLD}── Key Interview Points ───────────────────────────────{RESET}
+  • DLQ prevents one bad message from stopping the entire pipeline
+  • Never discard bad messages silently — always route to DLQ for audit
+  • DLQ retention should be longer than main topic (30 days vs 1 hour)
+  • Monitor DLQ volume: spike = upstream data quality incident
+  • Replay from DLQ after the root cause is fixed (do not lose the data)
+""")
+
+
 def launch_scenario_99():
     header("Scenario 99 — ALL Kafka Scenarios")
     for fn in [launch_scenario_1, launch_scenario_2, launch_scenario_3,
-               launch_scenario_4, launch_scenario_5, launch_scenario_6]:
+               launch_scenario_4, launch_scenario_5, launch_scenario_6,
+               launch_scenario_7, launch_scenario_8, launch_scenario_9,
+               launch_scenario_10, launch_scenario_11]:
         fn(); time.sleep(0.3)
 
 
@@ -786,13 +1570,18 @@ def show_status():
     _show_status(DIRS["pids"], "Kafka Lab")
 
 SCENARIO_MAP = {
-    1:  (launch_scenario_1, "K-01  Kafka architecture & concepts"),
-    2:  (launch_scenario_2, "K-02  Consumer group lag investigation"),
-    3:  (launch_scenario_3, "K-03  Topic operations & CLI reference"),
-    4:  (launch_scenario_4, "K-04  Broker down incident response"),
-    5:  (launch_scenario_5, "K-05  Python producer + consumer"),
-    6:  (launch_scenario_6, "K-06  Delivery semantics — exactly-once"),
-    99: (launch_scenario_99, "     ALL scenarios"),
+    1:  (launch_scenario_1,  "K-01  Kafka architecture & concepts"),
+    2:  (launch_scenario_2,  "K-02  Consumer group lag investigation"),
+    3:  (launch_scenario_3,  "K-03  Topic operations & CLI reference"),
+    4:  (launch_scenario_4,  "K-04  Broker down incident response"),
+    5:  (launch_scenario_5,  "K-05  Python producer + consumer"),
+    6:  (launch_scenario_6,  "K-06  Delivery semantics — exactly-once"),
+    7:  (launch_scenario_7,  "K-07  Market data feed handler → Kafka pipeline"),
+    8:  (launch_scenario_8,  "K-08  Market data consumer lag at market open"),
+    9:  (launch_scenario_9,  "K-09  Data pipeline — Kafka → tick storage"),
+    10: (launch_scenario_10, "K-10  Streaming VWAP pipeline (consume-transform-produce)"),
+    11: (launch_scenario_11, "K-11  Dead letter queue pattern"),
+    99: (launch_scenario_99, "      ALL scenarios"),
 }
 
 def main():
