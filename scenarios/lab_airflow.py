@@ -16,6 +16,11 @@ SCENARIOS:
   3   AF-03  Write a pipeline health check — mock Airflow API + script
   4   AF-04  Sensor task never triggering — ExternalTaskSensor diagnosis
   5   AF-05  Behavioral — tell your Airflow/pipeline story
+  6   AF-06  Market data ingestion DAG — feed handler → Kafka → HDF5
+  7   AF-07  Historical tick replay & data website — on-demand DAG, 3-tier storage
+  8   AF-08  End-of-day risk report DAG — ExternalTaskSensor, VaR, limits
+  9   AF-09  Regulatory reporting pipeline — FINRA/SEC/CFTC, T+1, retries
+  10  AF-10  Airflow best practices — idempotency, sensors, anti-patterns
   99         ALL scenarios
 """
 
@@ -730,6 +735,1144 @@ Your answer: describe your proactive (Airflow UI + Kafka lag) +
 
 
 # ══════════════════════════════════════════════
+#  SCENARIO 6 — Market Data Ingestion DAG
+# ══════════════════════════════════════════════
+
+def launch_scenario_6():
+    header("Scenario AF-06 — Market Data Ingestion DAG")
+    print("  The full market data pipeline orchestrated by Airflow.")
+    print("  Feed handler → Kafka → tick storage → quality checks.\n")
+
+    dag_file = write(DIRS["dags"] / "market_data_ingestion.py", """\
+\"\"\"
+Market Data Ingestion DAG
+=========================
+Orchestrates the daily market data pipeline:
+  1. Validate feed handler is alive and publishing to Kafka
+  2. Confirm Kafka consumer lag is below threshold (ticks flowing)
+  3. Trigger tick storage job (Kafka → HDF5/TimescaleDB)
+  4. Run data quality checks (gaps, crossed books, coverage)
+  5. Update the tick replay index (powers the data replay website)
+  6. Alert if any symbol is missing data for the session
+
+Schedule: runs at 16:15 (after market close at 16:00)
+SLA: must complete by 17:00 (before EOD risk report starts)
+\"\"\"
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.python import PythonOperator, BranchPythonOperator
+from airflow.operators.bash import BashOperator
+from airflow.sensors.external_task import ExternalTaskSensor
+
+default_args = {
+    "owner":            "market-data-team",
+    "retries":          2,
+    "retry_delay":      timedelta(minutes=3),
+    "email_on_failure": True,
+    "email_on_retry":   False,
+    "email":            ["market-data-oncall@firm.com", "ops@firm.com"],
+    "sla":              timedelta(minutes=45),   # must finish by 17:00
+}
+
+with DAG(
+    dag_id="market_data_ingestion",
+    default_args=default_args,
+    start_date=datetime(2024, 1, 1),
+    schedule_interval="15 16 * * 1-5",   # weekdays only, 16:15
+    catchup=False,
+    tags=["market-data", "production", "critical"],
+) as dag:
+
+    # ── Task 1: Check feed handler health ─────────────────────────────────
+    check_feed_handler = PythonOperator(
+        task_id="check_feed_handler",
+        python_callable=lambda: None,   # checks PID, last heartbeat timestamp
+        doc_md="""
+        Verify the feed handler process is alive and has published
+        ticks within the last 60 seconds. If stale, alert immediately —
+        the rest of the pipeline will have no data to process.
+        """,
+    )
+
+    # ── Task 2: Validate Kafka lag ────────────────────────────────────────
+    validate_kafka_lag = PythonOperator(
+        task_id="validate_kafka_lag",
+        python_callable=lambda: None,
+        doc_md="""
+        Query Kafka for tick-storage-group consumer lag on market-data.ticks.
+        Threshold: lag < 10,000 (approx 50 seconds at 200 ticks/sec).
+        If lag > threshold: tick storage is behind → incomplete data for EOD.
+        """,
+    )
+
+    # ── Task 3: Run tick storage job ──────────────────────────────────────
+    run_tick_storage = BashOperator(
+        task_id="run_tick_storage",
+        bash_command="python3 /opt/pipelines/tick_storage_pipeline.py --date {{ ds }}",
+        doc_md="""
+        Reads remaining ticks from Kafka market-data.ticks topic and
+        writes to HDF5 files partitioned by symbol and date.
+        Output: /data/ticks/{{ ds }}/AAPL.h5, MSFT.h5, etc.
+        Idempotent: uses UPSERT by (symbol, timestamp) — safe to rerun.
+        """,
+    )
+
+    # ── Task 4: Data quality checks ───────────────────────────────────────
+    run_quality_checks = PythonOperator(
+        task_id="run_quality_checks",
+        python_callable=lambda: None,
+        doc_md="""
+        For each symbol, verify:
+          - Tick count > 0 (data arrived at all)
+          - No sequence gaps > 100 messages (feed gaps)
+          - No crossed books in stored data
+          - Price range within ± 20% of previous close (sanity check)
+          - Coverage: data exists for all scheduled trading hours
+        Failures here go to DLQ and alert; do NOT block downstream.
+        """,
+    )
+
+    # ── Task 5: Update replay index ───────────────────────────────────────
+    update_replay_index = PythonOperator(
+        task_id="update_replay_index",
+        python_callable=lambda: None,
+        doc_md="""
+        Updates the PostgreSQL replay index table used by the
+        data replay website. For each symbol + date:
+          INSERT INTO replay_index (symbol, date, hdf5_path, tick_count,
+            first_ts, last_ts, quality_status)
+        Powers the symbol search and availability check on the website.
+        """,
+    )
+
+    # ── Task 6: Alert on missing symbols ──────────────────────────────────
+    check_symbol_coverage = PythonOperator(
+        task_id="check_symbol_coverage",
+        python_callable=lambda: None,
+        doc_md="""
+        Compare ticks received against the expected symbol universe.
+        Alert if any S&P 500 constituent has zero ticks for the session.
+        Common causes: exchange halted trading, feed subscription lapsed,
+        symbol delisted (check corporate actions calendar).
+        """,
+    )
+
+    # ── DAG dependencies ──────────────────────────────────────────────────
+    check_feed_handler >> validate_kafka_lag >> run_tick_storage
+    run_tick_storage >> [run_quality_checks, update_replay_index]
+    run_quality_checks >> check_symbol_coverage
+""")
+
+    notes = write(DIRS["data"] / "af06_pipeline_notes.md", """\
+# Market Data Ingestion DAG — Operations Notes
+================================================
+
+## Triage Order When DAG Fails
+
+1. check_feed_handler fails
+   → Feed handler process is down or stale
+   → Check PID: pgrep -la feed_handler
+   → Check last log: tail -f /var/log/market-data/feed_handler.log
+   → Restart feed handler, then clear task and rerun
+
+2. validate_kafka_lag fails
+   → tick-storage-group is behind (lag > threshold)
+   → Check: kafka-consumer-groups.sh --group tick-storage-group --describe
+   → If lag is growing: tick storage process may be down or slow
+   → Scale up tick storage consumers, then rerun
+
+3. run_tick_storage fails
+   → Check task log for: disk full, DB connection, schema error
+   → Disk: df -h /data/ticks
+   → DB: psql -c "SELECT 1" — connection test
+   → Rerun is safe — pipeline is idempotent (UPSERT)
+
+4. run_quality_checks fails
+   → Data arrived but has quality issues
+   → Check quality report: cat /data/quality/{{ date }}_report.json
+   → DOES NOT block downstream unless configured to
+   → Alert market-data team, investigate root cause
+
+5. update_replay_index fails
+   → Tick data is stored but replay website won't find it
+   → Check DB: psql -c "SELECT COUNT(*) FROM replay_index WHERE date='{{ date }}'"
+   → Fix: clear task, rerun — idempotent INSERT OR REPLACE
+
+## Key Idempotency Rules
+  - run_tick_storage: UPSERT by (symbol, timestamp) — safe to rerun N times
+  - update_replay_index: INSERT OR REPLACE — safe to rerun
+  - run_quality_checks: deletes old report then rewrites — safe to rerun
+  - NEVER: append-only writes without deduplication → rerun = duplicate data
+
+## Backfill Strategy
+  When a past date is missing:
+    airflow dags backfill market_data_ingestion \\
+      --start-date 2024-01-10 --end-date 2024-01-15
+  Backfill replays ticks from Kafka (if within retention window: 1 hour)
+  OR from archive storage (S3/GCS cold storage for older dates)
+
+## Monitoring
+  - SLA alert if not complete by 17:00
+  - Kafka lag dashboard: Grafana → market-data-consumer-lag
+  - Quality report emailed to market-data-team@firm.com daily
+  - Replay index health: SELECT date, COUNT(*) FROM replay_index GROUP BY date
+""")
+
+    print(f"""
+{BOLD}── DAG file ─────────────────────────────────────────────{RESET}
+{CYAN}       cat {dag_file}{RESET}
+
+{BOLD}── Operations notes ─────────────────────────────────────{RESET}
+{CYAN}       cat {notes}{RESET}
+
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Trace the DAG dependency chain
+{CYAN}       grep ">>" {dag_file}{RESET}
+
+  2. Find which task is the SLA gate (blocks EOD risk report)
+{CYAN}       grep "sla\|SLA" {dag_file}{RESET}
+
+  3. Given this error — which task failed and what's the fix?
+     "botocore.exceptions.NoCredentialsError: Unable to locate credentials"
+{CYAN}       # Answer: check_feed_handler or run_tick_storage
+       # Fix: IAM role on worker node is missing S3 permissions
+       # Same as AF-01 pattern — read full traceback first{RESET}
+
+{BOLD}── Best Practices in this DAG ─────────────────────────{RESET}
+  • doc_md on every task → team knows what each task does without reading code
+  • Idempotent tasks → safe to clear + rerun without data corruption
+  • SLA configured → alert fires before EOD risk report starts
+  • Weekdays only (1-5) → no weekend runs for equity market pipelines
+  • Retries=2 with delay → handles transient failures without paging
+  • Parallel branches → quality checks and replay index update in parallel
+""")
+
+
+# ══════════════════════════════════════════════
+#  SCENARIO 7 — Historical Tick Replay Pipeline
+# ══════════════════════════════════════════════
+
+def launch_scenario_7():
+    header("Scenario AF-07 — Historical Tick Replay & Data Website")
+    print("  The data replay website lets users search a symbol and")
+    print("  replay tick data going back 10 years. You support it.\n")
+
+    # Simulate the replay index database
+    import json as _json
+    replay_index = DIRS["data"] / "replay_index.json"
+    index_entries = []
+    symbols = ["AAPL", "MSFT", "GOOG", "AMZN", "SPY", "TSLA"]
+    from datetime import date as dt_date
+    base = datetime(2024, 1, 15)
+    for i in range(30):
+        d = (base - timedelta(days=i)).strftime("%Y-%m-%d")
+        for sym in symbols:
+            if i % 7 in (5, 6):   # no weekend data
+                continue
+            index_entries.append({
+                "symbol":   sym,
+                "date":     d,
+                "hdf5_path": f"/data/ticks/{d}/{sym}.h5",
+                "tick_count": 18000 + (i * 100) % 5000,
+                "first_ts": f"{d}T09:30:00",
+                "last_ts":  f"{d}T16:00:00",
+                "quality":  "GOOD" if i != 7 else "DEGRADED",   # one bad day
+            })
+    replay_index.write_text(_json.dumps(index_entries, indent=2))
+    ok(f"Replay index ({len(index_entries)} entries): {replay_index}")
+
+    # The replay DAG
+    replay_dag = write(DIRS["dags"] / "tick_replay.py", """\
+\"\"\"
+Tick Replay DAG
+===============
+Triggered by the data replay website when a user requests historical ticks.
+Searches the tick store (HDF5 / S3 archive), assembles the result set,
+and writes to a temp location the website reads.
+
+Triggered via Airflow REST API:
+  POST /api/v1/dags/tick_replay/dagRuns
+  {
+    "conf": {
+      "symbol":     "AAPL",
+      "start_date": "2015-01-01",
+      "end_date":   "2015-01-31",
+      "requestor":  "user@firm.com"
+    }
+  }
+\"\"\"
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.python import PythonOperator, ShortCircuitOperator
+
+default_args = {
+    "owner":            "platform-team",
+    "retries":          1,
+    "retry_delay":      timedelta(minutes=1),
+    "email_on_failure": True,
+}
+
+with DAG(
+    dag_id="tick_replay",
+    default_args=default_args,
+    start_date=datetime(2024, 1, 1),
+    schedule_interval=None,       # triggered on-demand ONLY, never scheduled
+    catchup=False,
+    max_active_runs=10,           # allow 10 concurrent user requests
+    tags=["replay", "on-demand"],
+) as dag:
+
+    # ── Step 1: Validate request ───────────────────────────────────────────
+    validate_request = ShortCircuitOperator(
+        task_id="validate_request",
+        python_callable=lambda **ctx: True,   # checks symbol in universe, date range valid
+        doc_md="""
+        Validates: symbol is in the known universe, dates are within 10-year window,
+        end_date > start_date, not a future date.
+        ShortCircuitOperator: if validation fails → skips ALL downstream tasks cleanly.
+        """,
+    )
+
+    # ── Step 2: Check replay index ────────────────────────────────────────
+    check_availability = PythonOperator(
+        task_id="check_availability",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        Queries replay_index table in PostgreSQL.
+        Identifies which dates in the range have data (GOOD/DEGRADED/MISSING).
+        Writes availability report to DAG conf output so user sees data gaps.
+        """,
+    )
+
+    # ── Step 3: Fetch from hot/cold storage ───────────────────────────────
+    fetch_ticks = PythonOperator(
+        task_id="fetch_ticks",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        HOT  storage (< 90 days):  read directly from HDF5 on local disk
+        WARM storage (90d - 2yr):  read from S3 Parquet (boto3, ~2-5s per file)
+        COLD storage (2yr - 10yr): read from S3 Glacier (restore first, 1-5min delay)
+
+        For cold storage: triggers a restore job and returns a 'pending' status.
+        Website polls /api/v1/dags/tick_replay/dagRuns/{run_id} for completion.
+        """,
+    )
+
+    # ── Step 4: Assemble and write output ─────────────────────────────────
+    write_output = PythonOperator(
+        task_id="write_output",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        Concatenates tick files, applies filters (time range within day),
+        writes to /tmp/replay/{run_id}.csv or .parquet.
+        Also writes metadata: symbol, date_range, tick_count, quality_flags.
+        TTL: output deleted after 24 hours (cron cleanup job).
+        """,
+    )
+
+    # ── Step 5: Notify user ───────────────────────────────────────────────
+    notify_requestor = PythonOperator(
+        task_id="notify_requestor",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        Sends email/Slack to requestor with download link.
+        Link: https://replay.firm.com/download/{run_id}
+        """,
+    )
+
+    validate_request >> check_availability >> fetch_ticks >> write_output >> notify_requestor
+""")
+
+    # Troubleshooting guide for the replay website
+    replay_guide = write(DIRS["data"] / "af07_replay_troubleshooting.md", """\
+# Data Replay Website — Support Troubleshooting Guide
+======================================================
+
+## Architecture
+  User enters: symbol=AAPL, start=2015-01-01, end=2015-01-31
+      ↓
+  Website (Flask/Django) → POST /api/v1/dags/tick_replay/dagRuns
+      ↓
+  Airflow triggers tick_replay DAG with conf={symbol, start_date, end_date}
+      ↓
+  DAG: validate → check_availability → fetch_ticks → write_output → notify
+      ↓
+  Website polls DAG run status → shows progress
+      ↓
+  User downloads /tmp/replay/{run_id}.csv
+
+## Common Issues and Fixes
+
+ISSUE: "No data found for AAPL 2015-01-05"
+  Cause 1: Market was closed (holiday) → expected, not a bug
+  Cause 2: Data never ingested → market_data_ingestion DAG failed that day
+  Diagnosis:
+    SELECT * FROM replay_index WHERE symbol='AAPL' AND date='2015-01-05';
+    airflow dags list-runs -d market_data_ingestion --start-date 2015-01-05
+  Fix: backfill from S3 archive if data exists there
+
+ISSUE: "Request is taking very long" (>5 minutes)
+  Cause 1: Cold storage restore (S3 Glacier, 1-5 min per file)
+    → expected for data older than 2 years
+    → website should show "Restoring from cold storage... (estimated 3 min)"
+  Cause 2: Large date range + high-volume symbol (AAPL 10yr = ~45M ticks)
+    → fetch_ticks task is reading and concatenating many files
+    → check task log for slow progress
+  Fix: add progress logging, show estimated completion on website
+
+ISSUE: "Data looks wrong / prices seem off"
+  Cause 1: Corporate action not applied (split, dividend)
+    AAPL 7:1 split in 2014 → pre-split prices appear 7x higher
+    Fix: replay pipeline should apply split adjustment factors
+  Cause 2: quality=DEGRADED in replay_index for that date
+    SELECT quality, tick_count FROM replay_index WHERE symbol='AAPL' AND date='2015-01-05'
+  Fix: investigate original feed data, re-ingest if source data exists
+
+ISSUE: "Replay DAG failed — check_availability task error"
+  Cause: replay_index table is missing entries (market_data_ingestion never ran)
+  Diagnosis: SELECT COUNT(*) FROM replay_index WHERE date='2015-01-05'
+  Fix: run market_data_ingestion backfill, then replay request will succeed
+
+ISSUE: Too many concurrent replay requests slowing the system
+  Check: airflow dags list-runs -d tick_replay --state running
+  Throttle: max_active_runs=10 in DAG config limits concurrent requests
+  Fix: increase worker count or add queue priority for replay tasks
+
+## Storage Tiers and Latency
+
+  Tier        | Age         | Storage      | Fetch time
+  ------------|-------------|--------------|------------
+  HOT         | < 90 days   | Local HDF5   | < 1 second
+  WARM        | 90d - 2yr   | S3 Parquet   | 2-10 seconds
+  COLD        | 2yr - 10yr  | S3 Glacier   | 1-5 minutes (restore)
+  VERY COLD   | > 10yr      | Tape/Glacier | Hours (request needed)
+
+## Replay Index Query Examples
+  -- What dates are available for AAPL?
+  SELECT date, tick_count, quality FROM replay_index
+  WHERE symbol='AAPL' ORDER BY date DESC LIMIT 10;
+
+  -- Find all dates with DEGRADED data quality
+  SELECT symbol, date, tick_count FROM replay_index
+  WHERE quality='DEGRADED' ORDER BY date DESC;
+
+  -- Check if a specific date has full coverage
+  SELECT COUNT(DISTINCT symbol) FROM replay_index
+  WHERE date='2024-01-15' AND quality='GOOD';
+""")
+
+    print(f"""
+{BOLD}── DAG file ─────────────────────────────────────────────{RESET}
+{CYAN}       cat {replay_dag}{RESET}
+
+{BOLD}── Replay index (simulated DB) ─────────────────────────{RESET}
+{CYAN}       python3 -c "import json; data=json.load(open('{replay_index}')); \\
+           [print(d['symbol'], d['date'], d['tick_count'], d['quality']) \\
+            for d in data[:10]]"{RESET}
+
+{BOLD}── Troubleshooting guide ────────────────────────────────{RESET}
+{CYAN}       cat {replay_guide}{RESET}
+
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Find all DEGRADED quality dates in the index
+{CYAN}       python3 -c "import json; \\
+           [print(d) for d in json.load(open('{replay_index}')) \\
+            if d['quality']!='GOOD']"{RESET}
+
+  2. A user reports "no data for AAPL 2015-01-05" — walk through your triage
+{CYAN}       cat {replay_guide} | grep -A8 "No data found"{RESET}
+
+{BOLD}── Key Interview Points ───────────────────────────────{RESET}
+  • schedule_interval=None → DAG is triggered on-demand by the website, never scheduled
+  • ShortCircuitOperator → skips downstream cleanly on validation failure
+  • max_active_runs=10 → rate-limit concurrent user requests
+  • Storage tiering: hot/warm/cold determines fetch latency
+  • Corporate action adjustments → pre-split prices need adj factor applied
+  • Replay index = metadata table that powers the search/availability UI
+""")
+
+
+# ══════════════════════════════════════════════
+#  SCENARIO 8 — End-of-Day Risk Report DAG
+# ══════════════════════════════════════════════
+
+def launch_scenario_8():
+    header("Scenario AF-08 — End-of-Day Risk Report DAG")
+    print("  Generates daily P&L, VaR, and position report after market close.")
+    print("  Depends on market data ingestion completing first.\n")
+
+    risk_dag = write(DIRS["dags"] / "eod_risk_report.py", """\
+\"\"\"
+End-of-Day Risk Report DAG
+==========================
+Runs after market close and after market_data_ingestion completes.
+Generates: P&L report, VaR, Greeks, position summary, limit utilization.
+Must complete by 17:30 for risk manager review before US close.
+\"\"\"
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.sensors.external_task import ExternalTaskSensor
+
+default_args = {
+    "owner":            "risk-team",
+    "retries":          1,
+    "retry_delay":      timedelta(minutes=5),
+    "email_on_failure": True,
+    "email":            ["risk-manager@firm.com", "risk-oncall@firm.com"],
+    "sla":              timedelta(minutes=30),   # complete by 17:30
+}
+
+with DAG(
+    dag_id="eod_risk_report",
+    default_args=default_args,
+    start_date=datetime(2024, 1, 1),
+    schedule_interval="0 17 * * 1-5",    # 17:00 weekdays
+    catchup=False,
+    tags=["risk", "eod", "critical"],
+) as dag:
+
+    # Gate: wait for market data to be fully ingested
+    wait_for_market_data = ExternalTaskSensor(
+        task_id="wait_for_market_data",
+        external_dag_id="market_data_ingestion",
+        external_task_id="update_replay_index",   # final task of that DAG
+        execution_delta=timedelta(minutes=45),     # market_data_ingestion runs at 16:15
+        timeout=3600,
+        mode="reschedule",
+        poke_interval=60,
+        doc_md="Blocks until market_data_ingestion has completed for today.",
+    )
+
+    # Load all positions from OMS/trade DB
+    load_positions = PythonOperator(
+        task_id="load_positions",
+        python_callable=lambda **ctx: None,
+        doc_md="Load all open positions for the trading date from the OMS database.",
+    )
+
+    # Apply today's closing prices to positions
+    mark_to_market = PythonOperator(
+        task_id="mark_to_market",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        Apply EOD closing prices from market data store to all positions.
+        P&L = (close_price - avg_entry_price) * quantity * direction
+        Writes MTM P&L per position to risk_pnl table.
+        """,
+    )
+
+    # Calculate Value-at-Risk
+    calculate_var = PythonOperator(
+        task_id="calculate_var",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        Historical simulation VaR using 10yr daily returns (from HDF5 tick store).
+        VaR(95%, 1-day) = loss exceeded in 5% of historical scenarios.
+        VaR(99%, 10-day) = regulatory capital requirement metric.
+        """,
+    )
+
+    # Check limit utilization
+    check_limits = PythonOperator(
+        task_id="check_limits",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        Compare P&L and VaR against trader/desk/firm limits.
+        BREACH: position_pnl < -limit → alert risk manager immediately.
+        WARN:   position_pnl < -0.8 * limit → yellow flag.
+        Results written to limit_utilization table.
+        """,
+    )
+
+    # Generate the PDF/HTML report
+    generate_report = PythonOperator(
+        task_id="generate_report",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        Assembles P&L, VaR, Greeks, limit utilization into a report.
+        Output: /reports/risk/{{ ds }}/eod_risk_report.pdf
+        Also writes JSON to reports API for web dashboard.
+        """,
+    )
+
+    # Distribute report
+    distribute_report = PythonOperator(
+        task_id="distribute_report",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        Emails report to risk managers, senior traders, compliance.
+        Posts summary to #risk-reports Slack channel.
+        Uploads to SharePoint for regulatory records retention.
+        """,
+    )
+
+    # DAG flow
+    wait_for_market_data >> load_positions >> mark_to_market
+    mark_to_market >> [calculate_var, check_limits]
+    [calculate_var, check_limits] >> generate_report >> distribute_report
+""")
+
+    # Realistic failure log for this DAG
+    fail_log_dir = DIRS["logs"] / "eod_risk_report" / "calculate_var" / "2024-01-15T17:00:00+00:00"
+    fail_log_dir.mkdir(parents=True, exist_ok=True)
+    write(fail_log_dir / "1.log", """\
+[2024-01-15 17:21:01,001] INFO  - Starting VaR calculation
+[2024-01-15 17:21:01,100] INFO  - Loading 10yr historical returns from HDF5...
+[2024-01-15 17:21:03,200] INFO  - Loaded 2,520 trading days of data
+[2024-01-15 17:21:03,201] INFO  - Running historical simulation for 847 positions...
+[2024-01-15 17:21:15,400] INFO  - Scenario simulation complete (10,000 scenarios)
+[2024-01-15 17:21:15,500] INFO  - Fetching AAPL options Greeks from pricing service...
+[2024-01-15 17:21:15,600] ERROR - ConnectionRefusedError: [Errno 111] Connection refused
+[2024-01-15 17:21:15,601] ERROR - Failed to connect to pricing service at pricing-svc:8080
+[2024-01-15 17:21:15,602] INFO  - Retrying in 30s (attempt 1/3)
+[2024-01-15 17:21:46,700] ERROR - ConnectionRefusedError: pricing-svc:8080 still down
+[2024-01-15 17:22:17,800] ERROR - All retries exhausted. VaR calculation incomplete.
+[2024-01-15 17:22:17,900] ERROR - Task failed with exception: ConnectionRefusedError
+""")
+
+    notes = write(DIRS["data"] / "af08_risk_dag_notes.md", """\
+# EOD Risk Report DAG — Operations Notes
+==========================================
+
+## Task Dependency Rationale
+  wait_for_market_data → ensures we use today's closing prices, not yesterday's
+  load_positions before mark_to_market → can't MTM without knowing what we hold
+  calculate_var + check_limits in PARALLEL → independent, no ordering needed
+  generate_report AFTER both → needs VaR and limit breach data to be complete
+
+## Common Failures
+
+1. wait_for_market_data times out (sensor waiting >60 min)
+   Cause: market_data_ingestion DAG failed or is still running
+   Fix: check market_data_ingestion DAG run status first
+        airflow dags list-runs -d market_data_ingestion --start-date {{ date }}
+   Do NOT manually mark sensor success — the prices may not be ready yet
+
+2. mark_to_market fails
+   Cause A: OMS database connection refused
+     → Check: psql -h oms-db -c "SELECT 1"
+     → Fix: restart DB connection pool, rerun task
+   Cause B: Missing price for a symbol
+     → quality=MISSING in replay_index for that symbol/date
+     → Fix: use previous close as fallback (with flag), alert market-data team
+
+3. calculate_var fails (pricing service down — see log above)
+   Cause: options pricing microservice at pricing-svc:8080 is down
+   Fix: restart pricing service, then clear + rerun calculate_var
+   Impact: VaR incomplete → generate_report blocked → report delayed
+   Escalate if pricing service cannot restart within 15 min of SLA deadline
+
+4. SLA miss (not complete by 17:30)
+   Impact: risk managers don't have EOD numbers for senior trader meeting
+   Triage: which task is slowest? (Grid view → task duration)
+   Common culprit: calculate_var (historical simulation scales with portfolio size)
+
+## Idempotency
+  load_positions: read-only — always safe to rerun
+  mark_to_market: writes to risk_pnl — uses UPSERT by (date, position_id)
+  calculate_var:  writes to var_results — uses UPSERT by (date, calc_method)
+  generate_report: overwrites /reports/risk/{{ date }}/eod_risk_report.pdf
+  All tasks safe to clear + rerun
+
+## The VaR Calculation Uses Historical Tick Data
+  calculate_var reads 10yr of daily returns from the HDF5 tick store
+  If market_data_ingestion was degraded → VaR uses incomplete price history
+  quality=DEGRADED in replay_index → VaR results are flagged with a warning
+  This is why market data quality directly affects risk accuracy
+""")
+
+    print(f"""
+{BOLD}── DAG file ─────────────────────────────────────────────{RESET}
+{CYAN}       cat {risk_dag}{RESET}
+
+{BOLD}── Failure log (pricing service down) ──────────────────{RESET}
+{CYAN}       cat "{fail_log_dir}/1.log"{RESET}
+
+{BOLD}── Operations notes ─────────────────────────────────────{RESET}
+{CYAN}       cat {notes}{RESET}
+
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Trace the full dependency chain including the external sensor
+{CYAN}       grep ">>\|ExternalTask" {risk_dag}{RESET}
+
+  2. From the failure log — what failed and what's the fix?
+{CYAN}       grep "ERROR\|ConnectionRefused" "{fail_log_dir}/1.log"{RESET}
+
+  3. Which two tasks run in parallel and why?
+{CYAN}       grep "calculate_var\|check_limits" {risk_dag} | grep ">>"
+       # Answer: independent — no data dependency between them{RESET}
+
+{BOLD}── Key Interview Points ───────────────────────────────{RESET}
+  • ExternalTaskSensor: gate on market_data_ingestion BEFORE running VaR
+  • Parallel branches: calculate_var + check_limits have no dependency → run together
+  • VaR uses 10yr historical tick data → market data quality directly affects risk
+  • execution_delta in sensor: market_data runs at 16:15, risk at 17:00 → 45min delta
+  • SLA=30min → must complete by 17:30 → page risk manager if breached
+""")
+
+
+# ══════════════════════════════════════════════
+#  SCENARIO 9 — Regulatory Reporting DAG
+# ══════════════════════════════════════════════
+
+def launch_scenario_9():
+    header("Scenario AF-09 — Regulatory Reporting Pipeline")
+    print("  Trade reporting to regulators (FINRA, MiFID II, SEC).")
+    print("  Strict deadlines — a missed submission is a regulatory breach.\n")
+
+    reg_dag = write(DIRS["dags"] / "regulatory_reporting.py", """\
+\"\"\"
+Regulatory Reporting DAG
+=========================
+Prepares and submits daily trade reports to regulators.
+Missing a submission deadline is a regulatory breach — treat this DAG
+as the highest-priority production pipeline.
+
+Reporting deadlines (US equities):
+  FINRA TRACE: T+1 by 08:00 ET (bond trades)
+  SEC CAT:     T+1 by 08:00 ET (equity/options trades)
+  CFTC:        T+1 by 09:00 ET (futures/swaps)
+
+SLA: DAG must complete by 07:30 to leave buffer before T+1 deadlines.
+\"\"\"
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.python import PythonOperator, BranchPythonOperator
+from airflow.operators.dummy import DummyOperator
+
+default_args = {
+    "owner":            "compliance-team",
+    "retries":          3,               # higher retries — submission MUST succeed
+    "retry_delay":      timedelta(minutes=2),
+    "email_on_failure": True,
+    "email_on_retry":   True,            # notify on retry too — regulatory context
+    "email":            ["compliance@firm.com", "legal@firm.com", "cto@firm.com"],
+    "sla":              timedelta(hours=7, minutes=30),  # complete by 07:30 T+1
+}
+
+with DAG(
+    dag_id="regulatory_reporting",
+    default_args=default_args,
+    start_date=datetime(2024, 1, 1),
+    schedule_interval="0 5 * * 2-6",   # T+1: run at 05:00 Tuesday-Saturday
+    catchup=False,
+    tags=["regulatory", "compliance", "critical"],
+) as dag:
+
+    # ── Step 1: Fetch all fills for trade date ─────────────────────────────
+    extract_trades = PythonOperator(
+        task_id="extract_trades",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        Pulls all FILLED orders from OMS for execution_date (T-1).
+        Includes: symbol, qty, price, side, trader, account, venue, timestamp.
+        Writes to staging table: reg_reporting_staging.
+        """,
+    )
+
+    # ── Step 2: Validate completeness ─────────────────────────────────────
+    validate_completeness = PythonOperator(
+        task_id="validate_completeness",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        Checks that all expected trade records are present.
+        Compares against OMS trade count for that date.
+        Validates required fields: no null account IDs, valid symbols,
+        prices within reasonable range (vs EOD market data).
+        Fails hard if count mismatch > 0 — better to fail than submit wrong data.
+        """,
+    )
+
+    # ── Step 3: Apply regulatory format transformations ───────────────────
+    format_finra = PythonOperator(
+        task_id="format_finra",
+        python_callable=lambda **ctx: None,
+        doc_md="Transform trades into FINRA TRACE submission format (FIX-based).",
+    )
+
+    format_sec_cat = PythonOperator(
+        task_id="format_sec_cat",
+        python_callable=lambda **ctx: None,
+        doc_md="Transform trades into SEC CAT (Consolidated Audit Trail) JSON format.",
+    )
+
+    format_cftc = PythonOperator(
+        task_id="format_cftc",
+        python_callable=lambda **ctx: None,
+        doc_md="Transform futures/swaps into CFTC swap data repository format.",
+    )
+
+    # ── Step 4: Submit to regulators (parallel) ───────────────────────────
+    submit_finra = PythonOperator(
+        task_id="submit_finra",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        Submits TRACE file to FINRA via SFTP.
+        Records submission timestamp and confirmation ID.
+        """,
+    )
+
+    submit_sec_cat = PythonOperator(
+        task_id="submit_sec_cat",
+        python_callable=lambda **ctx: None,
+        doc_md="Submits CAT file to FINRA CAT reporting facility via REST API.",
+    )
+
+    submit_cftc = PythonOperator(
+        task_id="submit_cftc",
+        python_callable=lambda **ctx: None,
+        doc_md="Submits swap data to DTCC SDR via SFTP.",
+    )
+
+    # ── Step 5: Confirm acknowledgements ─────────────────────────────────
+    confirm_acks = PythonOperator(
+        task_id="confirm_acks",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        Polls regulator endpoints for submission acknowledgements.
+        Fails if any submission is rejected or no ACK received within 30 min.
+        Rejection → immediate page to compliance and legal.
+        """,
+    )
+
+    # ── Step 6: Archive and audit trail ───────────────────────────────────
+    archive_submission = PythonOperator(
+        task_id="archive_submission",
+        python_callable=lambda **ctx: None,
+        doc_md="""
+        Archives submission files, ACK IDs, and timestamps to S3.
+        Retention: 7 years (SEC Rule 17a-4).
+        Updates reg_submission_log table for compliance dashboard.
+        """,
+    )
+
+    # ── DAG flow ──────────────────────────────────────────────────────────
+    extract_trades >> validate_completeness
+    validate_completeness >> [format_finra, format_sec_cat, format_cftc]
+    format_finra   >> submit_finra
+    format_sec_cat >> submit_sec_cat
+    format_cftc    >> submit_cftc
+    [submit_finra, submit_sec_cat, submit_cftc] >> confirm_acks >> archive_submission
+""")
+
+    notes = write(DIRS["data"] / "af09_regulatory_notes.md", """\
+# Regulatory Reporting DAG — Critical Operations Notes
+=======================================================
+
+## Why This DAG Is Different From All Others
+  A missed submission = regulatory breach = fines + investigation.
+  Rule: NEVER skip, silence, or manually mark-success any task in this DAG
+  without compliance team sign-off.
+
+  Retries=3 (not 2): we try harder here than anywhere else.
+  email_on_retry=True: compliance is notified on every retry, not just failure.
+  SLA=07:30: 30-minute buffer before T+1 deadlines — allows manual intervention.
+
+## Escalation Path (DO NOT DEVIATE)
+  1. Any task fails after all retries → page compliance@firm.com immediately
+  2. If cannot fix by 07:00 → compliance team notifies regulator proactively
+     (proactive notification = much better outcome than missed deadline)
+  3. Document EVERYTHING: what failed, when, what was tried, outcome
+  4. Post-incident: root cause + controls review required within 5 business days
+
+## Common Failures
+
+1. validate_completeness fails — trade count mismatch
+   Cause: OMS DB replication lag (read replica behind primary by N minutes)
+   Fix: query primary DB, not replica, for regulatory extracts
+   Do NOT skip validation — submitting wrong trade count is worse than being late
+
+2. submit_finra fails — SFTP connection refused
+   Cause: FINRA SFTP endpoint IP changed (they notify in advance)
+   Check: FINRA technical alerts email (compliance team receives these)
+   Fix: update SFTP host config, then clear + rerun submit_finra
+   Timeline: you have ~2 hours before deadline if you catch it at 05:00
+
+3. confirm_acks fails — rejection received
+   Most critical failure: our submission was REJECTED by the regulator
+   Cause: format error in submission file, wrong field, missing required value
+   Action: page compliance immediately, do NOT auto-resubmit
+   Fix: compliance reviews rejection code, corrects format, resubmits manually
+
+4. DAG fails at 05:00 and cannot be fixed by 07:00
+   → compliance team sends voluntary disclosure to regulator
+   → much better than a missed deadline without notification
+   → always prefer transparency with regulators over silence
+
+## Data Quality → Regulatory Accuracy
+  Bad market data (stale/gapped) → wrong price validation in validate_completeness
+  If a fill price deviates significantly from EOD price: flagged for review
+  This is why market_data_ingestion quality directly affects compliance
+
+## Retention Requirements
+  SEC Rule 17a-4: 7-year retention for trade records
+  Submissions archived to S3 with immutable object lock enabled
+  Never delete files from the reg-archive bucket without legal approval
+""")
+
+    print(f"""
+{BOLD}── DAG file ─────────────────────────────────────────────{RESET}
+{CYAN}       cat {reg_dag}{RESET}
+
+{BOLD}── Critical operations notes ────────────────────────────{RESET}
+{CYAN}       cat {notes}{RESET}
+
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Identify which tasks run in parallel and why
+{CYAN}       grep ">>" {reg_dag}
+       # format + submit steps are parallel — independent per regulator{RESET}
+
+  2. Why retries=3 here vs retries=2 elsewhere?
+{CYAN}       grep "retries" {reg_dag}
+       # Answer: missing a deadline is a regulatory breach — we retry harder{RESET}
+
+  3. Given this error: "SFTP connection refused at finra-sftp.finra.org"
+     Walk through your response
+{CYAN}       cat {notes} | grep -A8 "submit_finra fails"{RESET}
+
+{BOLD}── Key Interview Points ───────────────────────────────{RESET}
+  • schedule_interval="0 5 * * 2-6" → T+1: runs next morning (Tuesday-Saturday)
+  • Parallel format + submit: FINRA/SEC/CFTC are independent → no need to serialize
+  • validate_completeness fails hard: better late than wrong submission
+  • Proactive regulator notification > missed deadline without notice
+  • 7-year retention → S3 with object lock (immutable, cannot be deleted)
+  • This DAG should NEVER be marked success manually without compliance sign-off
+""")
+
+
+# ══════════════════════════════════════════════
+#  SCENARIO 10 — Airflow Best Practices
+# ══════════════════════════════════════════════
+
+def launch_scenario_10():
+    header("Scenario AF-10 — Airflow Best Practices for Trading Pipelines")
+    print("  Patterns, anti-patterns, and gotchas for production trading DAGs.\n")
+
+    best_practices = write(DIRS["data"] / "af10_best_practices.md", """\
+# Airflow Best Practices — Trading & Market Data Pipelines
+===========================================================
+
+## DAG Design
+
+ALWAYS idempotent tasks
+  A task that can be rerun without causing duplicate data or side effects.
+  Use UPSERT (INSERT OR REPLACE / ON CONFLICT DO UPDATE) for DB writes.
+  Use overwrite for file outputs (/reports/{{ ds }}/report.pdf overwrites itself).
+  Test: "If I clear this task and rerun it 3 times, is the output the same?"
+
+Keep tasks small and focused
+  One task = one unit of work. Don't put the whole pipeline in one PythonOperator.
+  Small tasks = faster failure detection, cleaner retries, better observability.
+
+No business logic in DAG file scope
+  Code at DAG file scope runs every 30 seconds (scheduler heartbeat parses all DAGs).
+  WRONG:  df = pd.read_csv("huge_file.csv")  # at module level → runs constantly
+  RIGHT:  put all logic inside the python_callable function
+
+Use {{ ds }} template variable for dates
+  {{ ds }} = execution_date as YYYY-MM-DD → safe for backfill and reruns
+  Hardcoding datetime.now() in a task = broken backfills
+
+doc_md on every task
+  Critical for a trading firm: ops team needs to know what each task does
+  without reading the full source code. Write it like a runbook entry.
+
+## Scheduling
+
+schedule_interval="0 9 * * 1-5"  ← weekdays only for equity market pipelines
+catchup=False                     ← don't run missed historical runs on restart
+max_active_runs=1                 ← prevent overlapping runs (most pipeline DAGs)
+max_active_runs=10                ← allow concurrency for on-demand DAGs (replay)
+
+## Sensors
+
+ALWAYS use mode="reschedule"
+  mode="poke" holds a worker slot while waiting → starves other tasks
+  mode="reschedule" releases the worker between checks → efficient
+
+ALWAYS set timeout
+  Without timeout: sensor polls forever, worker slot held indefinitely
+  timeout=3600 + mode=reschedule = polls every poke_interval, fails cleanly at 1hr
+
+execution_delta gotcha
+  ExternalTaskSensor looks for upstream run at SAME execution_date by default.
+  If upstream runs at 09:00 and downstream at 09:05:
+    execution_delta=timedelta(minutes=5) → look 5 minutes back → correct
+
+## Error Handling
+
+retries and retry_delay per task criticality
+  Market data:  retries=2, retry_delay=3min
+  Risk reports: retries=1, retry_delay=5min
+  Regulatory:   retries=3, retry_delay=2min (MUST succeed)
+
+email_on_failure for production DAGs
+  Always set. Include oncall DL, not just individual.
+  email=["team-oncall@firm.com"]  not  email=["john.smith@firm.com"]
+
+execution_timeout on long-running tasks
+  execution_timeout=timedelta(minutes=30)
+  Without it: a hung task blocks the slot forever silently.
+  With it: task is killed after timeout → retry logic takes over → alert fires
+
+## Monitoring
+
+Check these daily
+  DAGs tab → any red (failed) or yellow (SLA miss)?
+  Browse → SLA Misses → any DAGs consistently late?
+  Grid view → task duration trends (getting slower over time = data growth issue)
+
+Kafka lag as leading indicator
+  If market_data.ticks consumer lag spikes → market_data_ingestion DAG will be slow
+  Check lag BEFORE the DAG runs, not after it fails
+
+## Backfill
+
+airflow dags backfill <dag_id> --start-date YYYY-MM-DD --end-date YYYY-MM-DD
+  Runs DAG for each day in the range (one run per execution_date)
+  Tasks must be idempotent — backfill replays everything
+
+When to backfill
+  Feed was down for 3 days → backfill market_data_ingestion for those 3 days
+  VaR calculation used wrong prices → backfill eod_risk_report
+  Regulatory report had a bug → backfill regulatory_reporting (with compliance sign-off)
+
+Backfill on market data
+  If within Kafka retention (1 hour): replay from Kafka
+  If outside retention: read from S3 archive (warm/cold tier)
+  DAG must be aware of which storage tier to use based on date
+
+## Anti-Patterns to Avoid
+
+❌  datetime.now() in tasks → breaks backfill (always uses today's date)
+    Use: context['ds'] or context['execution_date']
+
+❌  Blind rerun without reading logs
+    "It failed, let me clear it" → rerun on a data integrity issue = corruption
+
+❌  Catching all exceptions silently
+    try: ... except: pass  → task shows success but did nothing → hard to debug
+
+❌  BashOperator for complex logic
+    Long bash scripts are harder to test, version, and debug than Python
+
+❌  Global state between tasks
+    Tasks run in separate processes (possibly on different workers).
+    Pass data between tasks via XCom (small data) or shared storage (large data).
+
+❌  Storing credentials in DAG code
+    Use Airflow Connections and Variables, or AWS Secrets Manager / Vault.
+""")
+
+    example_dag = write(DIRS["dags"] / "best_practice_example.py", """\
+\"\"\"
+Best Practice DAG Example
+Shows all recommended patterns for a trading pipeline DAG.
+\"\"\"
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.sensors.external_task import ExternalTaskSensor
+
+# ✅ Default args at module level (no logic, just config)
+default_args = {
+    "owner":            "platform-team",
+    "retries":          2,
+    "retry_delay":      timedelta(minutes=3),
+    "email_on_failure": True,
+    "email":            ["platform-oncall@firm.com"],
+    "sla":              timedelta(minutes=20),
+    "execution_timeout": timedelta(minutes=10),   # kill hung tasks
+}
+
+with DAG(
+    dag_id="best_practice_example",
+    default_args=default_args,
+    start_date=datetime(2024, 1, 1),
+    schedule_interval="0 9 * * 1-5",   # weekdays only
+    catchup=False,                      # don't backfill on restart
+    max_active_runs=1,                  # no overlapping runs
+    tags=["example"],
+) as dag:
+
+    # ✅ Use execution_date via context, not datetime.now()
+    def load_data(**context):
+        ds = context['ds']   # YYYY-MM-DD of the run
+        print(f"Loading data for {ds}")   # safe for backfill
+
+    # ✅ ExternalTaskSensor with reschedule mode + execution_delta + timeout
+    wait_for_upstream = ExternalTaskSensor(
+        task_id="wait_for_upstream",
+        external_dag_id="market_data_ingestion",
+        external_task_id="update_replay_index",
+        execution_delta=timedelta(minutes=45),
+        timeout=3600,
+        mode="reschedule",    # ✅ releases worker while waiting
+        poke_interval=60,
+        doc_md="Waits for market_data_ingestion to complete.",
+    )
+
+    # ✅ Small, focused task with doc_md
+    load_task = PythonOperator(
+        task_id="load_data",
+        python_callable=load_data,
+        doc_md="Loads market data for {{ ds }} from the tick store.",
+    )
+
+    # ✅ Idempotent write — UPSERT, not INSERT
+    def write_results(**context):
+        ds = context['ds']
+        # UPSERT: safe to rerun
+        # cursor.execute(
+        #   "INSERT INTO results (date, value) VALUES (%s, %s)
+        #    ON CONFLICT (date) DO UPDATE SET value=EXCLUDED.value",
+        #   [ds, result]
+        # )
+        print(f"UPSERT result for {ds}")
+
+    write_task = PythonOperator(
+        task_id="write_results",
+        python_callable=write_results,
+        doc_md="Writes results for {{ ds }} using UPSERT (idempotent, safe to rerun).",
+    )
+
+    wait_for_upstream >> load_task >> write_task
+""")
+
+    print(f"""
+{BOLD}── Best practices guide ─────────────────────────────────{RESET}
+{CYAN}       cat {best_practices}{RESET}
+
+{BOLD}── Example DAG with all patterns ───────────────────────{RESET}
+{CYAN}       cat {example_dag}{RESET}
+
+{BOLD}── Key things to say in the interview ─────────────────{RESET}
+  On idempotency:
+    "Every task in our pipelines uses UPSERT — clearing and rerunning
+     never creates duplicate data."
+
+  On sensors:
+    "We always use mode=reschedule and set a timeout — poke mode
+     holds a worker slot and can starve the rest of the pipeline."
+
+  On {{ ds }}:
+    "We never use datetime.now() inside tasks — always context['ds'].
+     That's what makes backfill work correctly."
+
+  On regulatory DAGs:
+    "Regulatory pipelines have retries=3 and email_on_retry=True.
+     Missing a submission is worse than any other failure — we retry
+     harder and notify compliance on every attempt, not just final failure."
+
+  On blind reruns:
+    "I never clear a failed task without reading the full traceback.
+     On a data integrity issue, a blind rerun can corrupt downstream
+     tables — which is a much bigger problem than the original failure."
+""")
+
+
+# ══════════════════════════════════════════════
 #  TEARDOWN / MAIN
 # ══════════════════════════════════════════════
 
@@ -743,12 +1886,17 @@ def show_status():
     _show_status(DIRS["pids"], "Airflow Lab")
 
 SCENARIO_MAP = {
-    1:  (launch_scenario_1, "AF-01  Debug a failed DAG"),
-    2:  (launch_scenario_2, "AF-02  SLA miss investigation"),
-    3:  (launch_scenario_3, "AF-03  Pipeline health check script"),
-    4:  (launch_scenario_4, "AF-04  Sensor task never triggering"),
-    5:  (launch_scenario_5, "AF-05  Behavioral — pipeline story"),
-    99: (None,               "      ALL scenarios"),
+    1:  (launch_scenario_1,  "AF-01  Debug a failed DAG"),
+    2:  (launch_scenario_2,  "AF-02  SLA miss investigation"),
+    3:  (launch_scenario_3,  "AF-03  Pipeline health check script"),
+    4:  (launch_scenario_4,  "AF-04  Sensor task never triggering"),
+    5:  (launch_scenario_5,  "AF-05  Behavioral — pipeline story"),
+    6:  (launch_scenario_6,  "AF-06  Market data ingestion DAG"),
+    7:  (launch_scenario_7,  "AF-07  Historical tick replay & data website"),
+    8:  (launch_scenario_8,  "AF-08  End-of-day risk report DAG"),
+    9:  (launch_scenario_9,  "AF-09  Regulatory reporting pipeline"),
+    10: (launch_scenario_10, "AF-10  Airflow best practices"),
+    99: (None,               "       ALL scenarios"),
 }
 
 def main():
