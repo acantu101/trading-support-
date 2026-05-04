@@ -18,8 +18,11 @@ import sys
 import time
 import struct
 import json
+import socket
 import argparse
 import random
+import threading
+import multiprocessing
 from pathlib import Path
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -29,6 +32,7 @@ DIRS = {
     "logs":    LAB_ROOT / "logs",
     "scripts": LAB_ROOT / "scripts",
     "data":    LAB_ROOT / "data",
+    "pids":    LAB_ROOT / "run",
 }
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -36,12 +40,103 @@ from common import (
     GREEN, YELLOW, RED, CYAN, BOLD, RESET, SEP,
     ok, warn, err, info, header, lab_footer,
     create_dirs as _create_dirs,
-    remove_lab_dir,
+    save_pid as _save_pid, load_pids as _load_pids,
+    spawn as _spawn, kill_pids, kill_strays, remove_lab_dir,
     show_status as _show_status,
 )
 
-def create_dirs(): _create_dirs(DIRS)
-def show_status(): _show_status(DIRS["logs"], "Market Data Lab")
+def create_dirs():  _create_dirs(DIRS)
+def save_pid(n, p): _save_pid(DIRS["pids"], n, p)
+def load_pids():    return _load_pids(DIRS["pids"])
+def spawn(t, a, n): return _spawn(t, a, DIRS["pids"], n)
+def show_status():  _show_status(DIRS["pids"], "Market Data Lab")
+
+# ── Live feed constants ────────────────────────────────
+MCAST_PRIMARY   = ("224.1.1.10", 5010)
+MCAST_SECONDARY = ("224.1.1.11", 5011)
+SYMBOLS     = ["AAPL", "MSFT", "GOOG", "AMZN", "SPY", "QQQ", "TSLA", "NVDA"]
+BASE_PRICES = {"AAPL": 185.00, "MSFT": 420.00, "GOOG": 175.00, "AMZN": 198.00,
+               "SPY": 520.00,  "QQQ": 445.00,  "TSLA": 240.00, "NVDA": 875.00}
+
+
+# ══════════════════════════════════════════════
+#  BACKGROUND WORKERS (live multicast)
+# ══════════════════════════════════════════════
+
+def _live_feed(group, port, name, drop_seqs=None, stop_after=None, interval=0.05):
+    """Generic multicast tick sender. Drops specified seqs; goes silent after stop_after."""
+    try:
+        import setproctitle; setproctitle.setproctitle(name)
+    except ImportError:
+        pass
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+    drop = set(drop_seqs or [])
+    prices = dict(BASE_PRICES)
+    start, seq = time.time(), 1
+    while True:
+        if stop_after and (time.time() - start) > stop_after:
+            time.sleep(1); continue
+        sym = SYMBOLS[seq % len(SYMBOLS)]
+        prices[sym] += 0.01 * (1 if seq % 3 else -1)
+        ts  = int(time.time() * 1_000_000)
+        msg = f"SEQ={seq}|SYM={sym}|PX={prices[sym]:.2f}|QTY={100+(seq%20)*50}|TS={ts}"
+        if seq not in drop:
+            try: sock.sendto(msg.encode(), (group, port))
+            except Exception: pass
+        seq += 1
+        time.sleep(interval)
+
+
+def _heartbeat_feed(group, port, name, stop_after=20, hb_interval=1.0):
+    """Sends ticks + heartbeats, goes completely silent after stop_after seconds."""
+    try:
+        import setproctitle; setproctitle.setproctitle(name)
+    except ImportError:
+        pass
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+    prices = dict(BASE_PRICES)
+    start, seq, last_hb = time.time(), 1, time.time()
+    while True:
+        if (time.time() - start) > stop_after:
+            time.sleep(0.5); continue
+        now = time.time()
+        ts  = int(now * 1_000_000)
+        if now - last_hb >= hb_interval:
+            sock.sendto(f"SEQ={seq}|TYPE=HB|TS={ts}".encode(), (group, port))
+            last_hb = now; seq += 1
+        sym = SYMBOLS[seq % len(SYMBOLS)]
+        prices[sym] += 0.01
+        sock.sendto(f"SEQ={seq}|TYPE=TICK|SYM={sym}|PX={prices[sym]:.2f}|TS={ts}".encode(),
+                    (group, port))
+        seq += 1
+        time.sleep(0.1)
+
+
+def _latency_feed(group, port, name, interval=0.05):
+    """Sends ticks with embedded exchange timestamps + random jitter spikes."""
+    try:
+        import setproctitle; setproctitle.setproctitle(name)
+    except ImportError:
+        pass
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+    prices = dict(BASE_PRICES)
+    seq = 1
+    while True:
+        sym = SYMBOLS[seq % len(SYMBOLS)]
+        prices[sym] += 0.01
+        exchange_ts = int(time.time() * 1_000_000)
+        jitter_us = random.gauss(200, 50)
+        if random.random() < 0.05:
+            jitter_us += random.uniform(4000, 8000)   # 5% spike
+        time.sleep(max(0, jitter_us / 1_000_000))
+        msg = f"SEQ={seq}|SYM={sym}|PX={prices[sym]:.2f}|EXCHANGE_TS={exchange_ts}"
+        try: sock.sendto(msg.encode(), (group, port))
+        except Exception: pass
+        seq += 1
+        time.sleep(interval)
 
 
 # ══════════════════════════════════════════════
@@ -722,25 +817,507 @@ SBE (Simple Binary Encoding) Explained:
 """)
 
 
+def launch_scenario_6():
+    header("Scenario MD-06 — Live Sequence Gap Detection (Real UDP)")
+    print("  A live UDP multicast feed is running with packets SEQ 47-51 silently dropped.")
+    print("  Listen, detect the gap, and understand the recovery path.\n")
+
+    group, port = MCAST_PRIMARY
+    # Drop seqs 47-51 to simulate packet loss
+    pid = spawn(_live_feed, (group, port, "md_gap_live", list(range(47, 52)), None, 0.05),
+                "md_gap_live")
+    ok(f"Live gap feed on {group}:{port}  PID={pid}")
+    warn("  SEQ 47-51 are silently dropped — gap will fire at seq 52")
+
+    detector = DIRS["scripts"] / "live_gap_detector.py"
+    detector.write_text(f"""\
+#!/usr/bin/env python3
+\"\"\"MD-06: Listen to live UDP feed and detect sequence gaps in real time.\"\"\"
+import socket, struct, time
+
+GROUP, PORT = '{group}', {port}
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+sock.bind(('', PORT))
+mreq = struct.pack('4sL', socket.inet_aton(GROUP), socket.INADDR_ANY)
+sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+sock.settimeout(5.0)
+
+print(f"Listening on {{GROUP}}:{{PORT}} — watching for gaps...")
+expected, gaps = 1, []
+try:
+    while True:
+        try:
+            data, _ = sock.recvfrom(4096)
+        except socket.timeout:
+            print("Feed timed out"); break
+        fields = dict(f.split('=', 1) for f in data.decode().split('|') if '=' in f)
+        seq = int(fields.get('SEQ', 0))
+        sym = fields.get('SYM', '?')
+        px  = fields.get('PX', '?')
+        if seq != expected:
+            missing = list(range(expected, seq))
+            gaps.append(missing)
+            print(f"  *** GAP: expected {{expected}} got {{seq}} — missing {{missing}} ***")
+            print(f"      → RetransmitRequest for SEQ {{expected}}-{{seq-1}}")
+            expected = seq + 1
+        else:
+            print(f"  SEQ={{seq:>4}}  {{sym:<5}}  {{px}}")
+            expected += 1
+except KeyboardInterrupt:
+    pass
+print(f"\\nGaps found: {{len(gaps)}}")
+for g in gaps:
+    print(f"  Missing: {{g}}")
+""")
+    ok(f"Live detector: {detector}")
+
+    print(f"""
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Run the live gap detector — watch for the gap at SEQ 47-51
+{CYAN}       python3 {detector}{RESET}
+
+  2. Verify raw packets on the wire
+{CYAN}       sudo tcpdump -i lo 'dst host {group}' -n -A | grep SEQ{RESET}
+
+  3. Check receive buffer — small buffer = kernel drops before your app sees them
+{CYAN}       cat /proc/sys/net/core/rmem_max
+       sudo sysctl -w net.core.rmem_max=26214400{RESET}
+
+{BOLD}── Key Interview Points ───────────────────────────────{RESET}
+  • Gap on UDP = packets gone forever — YOU must detect and recover
+  • RetransmitRequest sent on TCP channel (separate from the UDP feed)
+  • Gap too large → request full snapshot, rebuild book from scratch
+  • rmem_max too small → kernel silently drops bursts → false gaps
+""")
+
+
+def launch_scenario_7():
+    header("Scenario MD-07 — Feed Arbitration (A/B Feed Failover)")
+    print("  Primary A-feed dies after ~25s. Secondary B-feed runs continuously.")
+    print("  Detect the failure and switch — this is standard production architecture.\n")
+
+    g_a, p_a = MCAST_PRIMARY
+    g_b, p_b = MCAST_SECONDARY
+
+    pid_a = spawn(_live_feed, (g_a, p_a, "md_feed_a", [], 25, 0.05), "md_feed_a")
+    ok(f"A-feed (PRIMARY)   {g_a}:{p_a}  PID={pid_a}")
+    pid_b = spawn(_live_feed, (g_b, p_b, "md_feed_b", [], None, 0.05), "md_feed_b")
+    ok(f"B-feed (SECONDARY) {g_b}:{p_b}  PID={pid_b}")
+    warn("  A-feed goes silent in ~25 seconds — watch the arbitrator failover!")
+
+    arb = DIRS["scripts"] / "feed_arbitrator.py"
+    arb.write_text(f"""\
+#!/usr/bin/env python3
+\"\"\"MD-07: Monitor A and B feeds — auto-failover when primary goes stale.\"\"\"
+import socket, struct, threading, time
+
+A_GROUP, A_PORT = '{g_a}', {p_a}
+B_GROUP, B_PORT = '{g_b}', {p_b}
+STALE_SEC = 3.0
+
+last = {{'A': time.time(), 'B': time.time()}}
+lock = threading.Lock()
+
+def listen(group, port, label):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.bind(('', port))
+    mreq = struct.pack('4sL', socket.inet_aton(group), socket.INADDR_ANY)
+    s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+    s.settimeout(1.0)
+    while True:
+        try:
+            s.recvfrom(4096)
+            with lock: last[label] = time.time()
+        except socket.timeout:
+            pass
+
+threading.Thread(target=listen, args=(A_GROUP, A_PORT, 'A'), daemon=True).start()
+threading.Thread(target=listen, args=(B_GROUP, B_PORT, 'B'), daemon=True).start()
+
+active = 'A'
+print(f"Arbitrator running | stale threshold={{STALE_SEC}}s")
+print(f"{{' TIME':>8}}  {{'ACTIVE':<8}}  {{'A-AGE':>8}}  {{'B-AGE':>8}}  STATUS")
+print("-" * 50)
+
+try:
+    while True:
+        now  = time.time()
+        with lock:
+            age_a = now - last['A']
+            age_b = now - last['B']
+        if active == 'A' and age_a > STALE_SEC:
+            active = 'B'
+            print(f"  *** FAILOVER → B-feed (A stale {{age_a:.1f}}s) ***")
+        elif active == 'B' and age_a < STALE_SEC:
+            active = 'A'
+            print(f"  *** RECOVERY → A-feed restored ***")
+        status = "OK" if (active=='A' and age_a<STALE_SEC) or (active=='B' and age_b<STALE_SEC) else "⚠ BOTH STALE"
+        print(f"{{time.strftime('%H:%M:%S'):>8}}  {{active:<8}}  {{age_a:>7.1f}}s  {{age_b:>7.1f}}s  {{status}}")
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("\\nArbitrator stopped.")
+""")
+    ok(f"Arbitrator: {arb}")
+
+    print(f"""
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Run the arbitrator — watch the automatic failover at ~25s
+{CYAN}       python3 {arb}{RESET}
+
+  2. Monitor both feeds manually (two terminals)
+{CYAN}       sudo tcpdump -i lo 'dst host {g_a}' -n | grep -oP 'SEQ=\\K[0-9]+'
+       sudo tcpdump -i lo 'dst host {g_b}' -n | grep -oP 'SEQ=\\K[0-9]+'
+{RESET}
+{BOLD}── Key Interview Points ───────────────────────────────{RESET}
+  • ALL major exchanges publish identical A-feed and B-feed on different groups
+  • Your handler subscribes to BOTH simultaneously; arbitration picks the source
+  • Deduplication: if B-feed seq ≤ last A-feed seq → discard (already processed)
+  • Both stale → declare feed-down, page on-call immediately
+  • CME MDP 3.0, NASDAQ ITCH, NYSE XDP all use A/B architecture
+""")
+
+
+def launch_scenario_8():
+    header("Scenario MD-08 — Stale Feed Detection (Heartbeat Timeout)")
+    print("  Feed sends ticks + 1-second heartbeats. Goes completely silent after ~20s.")
+    print("  Detect staleness within the timeout window.\n")
+
+    group, port = MCAST_PRIMARY
+    pid = spawn(_heartbeat_feed, (group, port, "md_stale", 20, 1.0), "md_stale")
+    ok(f"Heartbeat feed on {group}:{port}  PID={pid}")
+    warn("  Feed goes silent in ~20 seconds — watch for the stale alert!")
+
+    monitor = DIRS["scripts"] / "heartbeat_monitor.py"
+    monitor.write_text(f"""\
+#!/usr/bin/env python3
+\"\"\"MD-08: Alert when feed heartbeat exceeds stale threshold.\"\"\"
+import socket, struct, time
+
+GROUP, PORT     = '{group}', {port}
+STALE_MS        = 3000
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+sock.bind(('', PORT))
+mreq = struct.pack('4sL', socket.inet_aton(GROUP), socket.INADDR_ANY)
+sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+sock.settimeout(0.5)
+
+last_msg, alerted, count = time.time(), False, 0
+print(f"Heartbeat monitor {{GROUP}}:{{PORT}} | stale threshold={{STALE_MS}}ms")
+
+try:
+    while True:
+        try:
+            data, _ = sock.recvfrom(4096)
+            fields   = dict(f.split('=',1) for f in data.decode().split('|') if '=' in f)
+            last_msg = time.time(); alerted = False; count += 1
+            mtype    = fields.get('TYPE','TICK')
+            label    = "HB  " if mtype=='HB' else f"TICK {fields.get('SYM','?')} @ {{fields.get('PX','?')}}"
+            print(f"  [{{time.strftime('%H:%M:%S')}}] {{label}}  SEQ={{fields.get('SEQ','?')}}")
+        except socket.timeout:
+            pass
+        age_ms = (time.time() - last_msg) * 1000
+        if age_ms > STALE_MS and not alerted:
+            print(f"\\n  ⚠ STALE FEED — no data for {{age_ms:.0f}}ms!")
+            print(f"     Action: failover to B-feed, check sender PID, check IGMP membership")
+            alerted = True
+except KeyboardInterrupt:
+    pass
+print(f"\\nTotal messages: {{count}}")
+""")
+    ok(f"Heartbeat monitor: {monitor}")
+
+    print(f"""
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Run the monitor and wait for the stale alert (~20s)
+{CYAN}       python3 {monitor}{RESET}
+
+  2. After alert, check IGMP membership and NIC drops
+{CYAN}       ip maddr show
+       ip -s link show lo     # RX dropped > 0 ?{RESET}
+
+  3. Check if sender process is still alive
+{CYAN}       pgrep -la md_stale{RESET}
+
+{BOLD}── Key Interview Points ───────────────────────────────{RESET}
+  • Even in a quiet market the exchange sends heartbeats — silence = problem
+  • Stale threshold is asset-class dependent: futures ~1s, equities ~3-5s
+  • First action: failover to B-feed. THEN investigate cause.
+  • IGMP snooping on switches can silently prune your multicast subscription
+  • Check: NIC RX drops, sender process health, multicast routing (IGMP)
+""")
+
+
+def launch_scenario_9():
+    header("Scenario MD-09 — Feed Latency Analysis (Exchange Timestamp)")
+    print("  Every tick carries EXCHANGE_TS (microseconds). Measure transit latency.")
+    print("  Identify spikes and understand their root causes.\n")
+
+    group, port = MCAST_PRIMARY
+    pid = spawn(_latency_feed, (group, port, "md_latency", 0.05), "md_latency")
+    ok(f"Latency feed on {group}:{port}  PID={pid}")
+
+    analyzer = DIRS["scripts"] / "latency_analyzer.py"
+    analyzer.write_text(f"""\
+#!/usr/bin/env python3
+\"\"\"MD-09: Measure per-tick feed latency from embedded exchange timestamps.\"\"\"
+import socket, struct, time, statistics
+
+GROUP, PORT = '{group}', {port}
+SAMPLES     = 100
+SPIKE_US    = 1000
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+sock.bind(('', PORT))
+mreq = struct.pack('4sL', socket.inet_aton(GROUP), socket.INADDR_ANY)
+sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+sock.settimeout(2.0)
+
+print(f"Collecting {{SAMPLES}} samples | spike threshold={{SPIKE_US}}µs")
+print(f"{{' SEQ':>6}}  {{'SYM':<5}}  {{'LAT µs':>8}}  STATUS")
+print("-" * 35)
+
+latencies, spikes = [], []
+try:
+    for _ in range(SAMPLES):
+        data, _ = sock.recvfrom(4096)
+        recv_ts  = int(time.time() * 1_000_000)
+        fields   = dict(f.split('=',1) for f in data.decode().split('|') if '=' in f)
+        exc_ts   = int(fields.get('EXCHANGE_TS', recv_ts))
+        lat      = recv_ts - exc_ts
+        latencies.append(lat)
+        seq, sym = fields.get('SEQ','?'), fields.get('SYM','?')
+        flag = "⚠ SPIKE" if lat > SPIKE_US else "OK"
+        if lat > SPIKE_US: spikes.append((seq, lat))
+        print(f"{{seq:>6}}  {{sym:<5}}  {{lat:>8}}  {{flag}}")
+except (KeyboardInterrupt, socket.timeout):
+    pass
+
+if latencies:
+    s = sorted(latencies)
+    print(f"\\n── Latency Report ({{len(latencies)}} samples) ────────────")
+    print(f"  Min : {{min(latencies):>8}}µs")
+    print(f"  P50 : {{s[len(s)//2]:>8}}µs")
+    print(f"  P95 : {{s[int(len(s)*.95)]:>8}}µs")
+    print(f"  P99 : {{s[int(len(s)*.99)]:>8}}µs")
+    print(f"  Max : {{max(latencies):>8}}µs")
+    print(f"  Spikes >{{SPIKE_US}}µs: {{len(spikes)}}")
+    print()
+    print("  Spike causes to investigate:")
+    print("    ethtool -c eth0        → NIC interrupt coalescing (rx-usecs > 0)")
+    print("    sar -u 1 5             → CPU contention")
+    print("    grep GC app.log        → JVM GC pause")
+    print("    cyclictest             → OS scheduler jitter")
+""")
+    ok(f"Latency analyzer: {analyzer}")
+
+    print(f"""
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Run the analyzer and observe P50/P95/P99 distribution
+{CYAN}       python3 {analyzer}{RESET}
+
+  2. Check NIC coalescing (biggest tunable for sub-ms latency)
+{CYAN}       ethtool -c eth0 2>/dev/null || echo "check: ip link"{RESET}
+
+  3. Use awk to compute your own P99 from raw output
+{CYAN}       python3 {analyzer} | grep -E '^[0-9]' | awk '{{print $3}}' | sort -n | tail -1{RESET}
+
+{BOLD}── Key Interview Points ───────────────────────────────{RESET}
+  • Always report P99, not mean — mean hides worst-case latency
+  • NIC interrupt coalescing: batches IRQs → adds consistent delay
+     Fix: ethtool -C eth0 rx-usecs 0
+  • JVM GC: minor GC = 5-50ms pause → spikes in P99
+  • OS scheduler: non-RT Linux can delay wakeup 1-4ms
+  • Colocation (your servers IN the exchange DC) = best possible latency
+  • PTP clock sync required for cross-host latency measurement accuracy
+""")
+
+
+def launch_scenario_10():
+    header("Scenario MD-10 — NIC Buffer Tuning & Drop Detection")
+    print("  High-throughput feeds overflow the NIC receive buffer.")
+    print("  The kernel silently drops packets — you see gaps but no errors.\n")
+
+    group, port = MCAST_PRIMARY
+    # Fast feed — 200 msgs/sec to stress the receiver
+    pid = spawn(_live_feed, (group, port, "md_burst", [], None, 0.005), "md_burst")
+    ok(f"Burst feed on {group}:{port}  PID={pid}  (200 msg/s)")
+
+    ref = DIRS["data"] / "nic_tuning_reference.txt"
+    ref.write_text("""\
+NIC BUFFER TUNING REFERENCE
+=============================
+
+WHY PACKETS GET DROPPED:
+  UDP multicast: exchange → NIC DMA → kernel ring buffer → your app
+  If your app is slow (or CPU is busy), kernel ring buffer fills up.
+  Kernel drops the packet. No error to the exchange. No retransmit.
+  You just see a gap in sequence numbers.
+
+DIAGNOSE DROPS:
+  # Check NIC drop counter
+  ip -s link show eth0
+  # Look for: RX: dropped > 0
+
+  # ethtool stats (more detail)
+  ethtool -S eth0 | grep -i "miss\\|drop\\|error"
+
+  # Socket-level drops (per-socket)
+  cat /proc/net/udp          # shows drops per UDP socket
+  ss -u -s                   # UDP socket summary
+
+  # Kernel ring buffer status
+  cat /proc/net/softnet_stat  # column 2 = drops
+
+FIXES:
+  1. Increase receive buffer size (most impactful)
+     sudo sysctl -w net.core.rmem_max=67108864      # 64MB max
+     sudo sysctl -w net.core.rmem_default=26214400  # 25MB default
+
+  2. Set per-socket buffer in your app
+     sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 26214400)
+
+  3. Increase kernel ring buffer (NIC level)
+     ethtool -G eth0 rx 4096    # increase RX ring buffer entries
+
+  4. Use dedicated CPU core for packet processing
+     Bind IRQ affinity to a specific core (not the trading core)
+     echo 2 > /proc/irq/<NIC_IRQ>/smp_affinity
+
+  5. Use DPDK (bypass kernel entirely) — extreme low-latency only
+
+VERIFY FIX:
+  ip -s link show eth0    # dropped counter should stop growing
+  Watch gap_detector output — gaps should disappear
+
+RULE OF THUMB:
+  rmem_max ≥ burst_rate_bytes_per_sec × latency_budget_sec
+  Example: 100MB/s feed, 0.1s latency budget → rmem_max ≥ 10MB
+""")
+    ok(f"NIC tuning reference: {ref}")
+
+    drop_checker = DIRS["scripts"] / "drop_checker.py"
+    drop_checker.write_text(f"""\
+#!/usr/bin/env python3
+\"\"\"MD-10: Receive the burst feed and check for sequence gaps (caused by drops).\"\"\"
+import socket, struct, time
+
+GROUP, PORT = '{group}', {port}
+
+# Set large receive buffer to reduce drops
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 26214400)  # 25MB
+sock.bind(('', PORT))
+mreq = struct.pack('4sL', socket.inet_aton(GROUP), socket.INADDR_ANY)
+sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+sock.settimeout(5.0)
+
+print(f"Receiving burst feed on {{GROUP}}:{{PORT}} (SO_RCVBUF=25MB)")
+print(f"Run without SO_RCVBUF to see more drops\\n")
+
+received, gaps, expected = 0, 0, None
+start = time.time()
+
+try:
+    while time.time() - start < 10:
+        try:
+            data, _ = sock.recvfrom(4096)
+            fields   = dict(f.split('=',1) for f in data.decode().split('|') if '=' in f)
+            seq = int(fields.get('SEQ', 0))
+            if expected is None:
+                expected = seq
+            if seq != expected:
+                dropped = seq - expected
+                gaps   += dropped
+                print(f"  GAP: {{dropped}} packets dropped (SEQ {{expected}}-{{seq-1}})")
+                expected = seq + 1
+            else:
+                received += 1
+                expected += 1
+        except socket.timeout:
+            break
+except KeyboardInterrupt:
+    pass
+
+elapsed = time.time() - start
+print(f"\\n── Results ({{elapsed:.1f}}s) ──────────────────────────────")
+print(f"  Received : {{received}}")
+print(f"  Dropped  : {{gaps}}")
+print(f"  Drop rate: {{gaps/(received+gaps)*100 if received+gaps>0 else 0:.1f}}%")
+print(f"  Rate     : {{received/elapsed:.0f}} msg/s")
+print()
+print("  Check NIC counters:")
+print("    ip -s link show lo    → RX: dropped should be 0 with large buffer")
+print("    cat /proc/net/softnet_stat  → column 2 = kernel drops")
+""")
+    ok(f"Drop checker: {drop_checker}")
+
+    print(f"""
+{BOLD}── Burst feed on {group}:{port} — 200 msg/s ─────────────{RESET}
+
+{BOLD}── Your Tasks ─────────────────────────────────────────{RESET}
+  1. Run the drop checker with the large socket buffer
+{CYAN}       python3 {drop_checker}{RESET}
+
+  2. Check current kernel buffer limits
+{CYAN}       cat /proc/sys/net/core/rmem_max
+       cat /proc/sys/net/core/rmem_default{RESET}
+
+  3. Increase buffer and re-run
+{CYAN}       sudo sysctl -w net.core.rmem_max=67108864
+       python3 {drop_checker}{RESET}
+
+  4. Check NIC-level drop counters
+{CYAN}       ip -s link show lo
+       cat /proc/net/softnet_stat{RESET}
+
+  5. Read the full NIC tuning reference
+{CYAN}       cat {ref}{RESET}
+
+{BOLD}── Key Interview Points ───────────────────────────────{RESET}
+  • Kernel drops are SILENT — no error message, just a gap in seq nums
+  • rmem_max controls the max socket receive buffer the app can request
+  • SO_RCVBUF must be set BEFORE bind() to take effect
+  • NIC ring buffer (ethtool -G) is separate from socket buffer
+  • Drop at NIC ring → kernel never sees packet → rmem won't help
+  • Fix order: socket buffer → NIC ring → dedicated CPU core → DPDK
+""")
+
+
 def launch_scenario_99():
     header("Scenario 99 — ALL Market Data Scenarios")
     for fn in [launch_scenario_1, launch_scenario_2, launch_scenario_3,
-               launch_scenario_4, launch_scenario_5]:
+               launch_scenario_4, launch_scenario_5, launch_scenario_6,
+               launch_scenario_7, launch_scenario_8, launch_scenario_9,
+               launch_scenario_10]:
         fn()
         time.sleep(0.2)
 
 
 def teardown():
     header("Tearing Down Market Data Lab")
+    kill_pids(DIRS["pids"])
+    kill_strays(["md_gap_live", "md_feed_a", "md_feed_b",
+                 "md_stale", "md_latency", "md_burst"])
     remove_lab_dir(LAB_ROOT)
 
 
 SCENARIO_MAP = {
-    1:  (launch_scenario_1, "MD-01  Order book L1/L2/L3"),
-    2:  (launch_scenario_2, "MD-02  ITCH protocol decode"),
-    3:  (launch_scenario_3, "MD-03  HDF5 tick data"),
-    4:  (launch_scenario_4, "MD-04  Feed handler gap detection"),
-    5:  (launch_scenario_5, "MD-05  SBE binary protocol"),
+    1:  (launch_scenario_1,  "MD-01  Order book L1/L2/L3"),
+    2:  (launch_scenario_2,  "MD-02  ITCH protocol decode"),
+    3:  (launch_scenario_3,  "MD-03  HDF5 tick data"),
+    4:  (launch_scenario_4,  "MD-04  Feed handler gap detection (file)"),
+    5:  (launch_scenario_5,  "MD-05  SBE binary protocol"),
+    6:  (launch_scenario_6,  "MD-06  Live sequence gap detection (real UDP)"),
+    7:  (launch_scenario_7,  "MD-07  Feed arbitration — A/B failover"),
+    8:  (launch_scenario_8,  "MD-08  Stale feed detection — heartbeat timeout"),
+    9:  (launch_scenario_9,  "MD-09  Feed latency analysis — exchange timestamp"),
+    10: (launch_scenario_10, "MD-10  NIC buffer tuning & drop detection"),
     99: (launch_scenario_99, "      ALL scenarios"),
 }
 
@@ -749,7 +1326,8 @@ def main():
     parser = argparse.ArgumentParser(description="Market Data & Protocols Challenge Lab",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="\n".join(f"  {k:<4} {v}" for k, (_, v) in SCENARIO_MAP.items()))
-    parser.add_argument("--scenario", "-s", type=int, choices=list(SCENARIO_MAP.keys()))
+    parser.add_argument("--scenario", "-s", type=int, choices=list(SCENARIO_MAP.keys()),
+                        metavar="{1-10,99}")
     parser.add_argument("--teardown", "-t", action="store_true")
     parser.add_argument("--status",         action="store_true")
     args = parser.parse_args()
