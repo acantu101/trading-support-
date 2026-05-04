@@ -496,6 +496,10 @@
       <span class="nav-dot"></span> Support &amp; Incidents
       <span class="badge">7</span>
     </div>
+    <div class="nav-item" onclick="showDeck('interview')" id="nav-interview">
+      <span class="nav-dot"></span> Interview Prep
+      <span class="badge">6</span>
+    </div>
   </aside>
 
   <!-- ── Main ── -->
@@ -3782,6 +3786,215 @@ If unresolved after 20 min → page @senior-oncall</div>
       </div>
     </div>
 
+    <!-- ════════════════ INTERVIEW PREP ════════════════ -->
+    <div class="deck" id="deck-interview">
+      <div class="deck-bar">
+        <div class="deck-info">
+          <span class="deck-icon">🎯</span>
+          <div>
+            <div class="deck-label">Interview Prep</div>
+            <div class="deck-desc">Questions to expect + questions to ask — App Support, Market Data, Data Ops</div>
+          </div>
+        </div>
+        <div class="deck-meta">
+          <div class="kbd-hint"><kbd>←</kbd><kbd>→</kbd> navigate</div>
+          <div class="deck-counter" id="ctr-interview"><strong>1</strong> / 6</div>
+        </div>
+      </div>
+      <div class="slides-wrap" id="slides-interview">
+
+        <!-- Interview slide 1: App Support — Questions they'll ask you -->
+        <div class="slide" id="interview-0">
+          <h2>Application Support Engineer — What They'll Ask You</h2>
+          <p style="font-size:0.82em;color:var(--muted);margin:-8px 0 14px">Based on DRW posting ($130k–$165k, Greenwich CT) — Unified Platform Support, L1/L2, FIX + native protocols, Linux, Python, AWS</p>
+          <div class="cols">
+            <div>
+              <h3>Technical</h3>
+              <ul>
+                <li>"Walk me through how you'd triage a FIX session that stopped receiving Execution Reports." <em style="color:var(--muted);font-size:0.85em">→ session state, seq nums, 35=8 tags</em></li>
+                <li>"A market data feed is showing sequence gaps. What's your first move?" <em style="color:var(--muted);font-size:0.85em">→ A/B feed, handler logs, Kafka lag</em></li>
+                <li>"How do you tell the difference between a network issue and an application issue?" <em style="color:var(--muted);font-size:0.85em">→ nc, tcpdump, ss, app logs</em></li>
+                <li>"Describe a time you used SQL to diagnose a data pipeline problem." <em style="color:var(--muted);font-size:0.85em">→ LAG(), EXCEPT, LEFT JOIN IS NULL</em></li>
+                <li>"What Linux tools do you reach for first when a process is misbehaving?" <em style="color:var(--muted);font-size:0.85em">→ top, ps, lsof, strace, journalctl</em></li>
+                <li>"How does Python's Kafka consumer handle offset commits, and why does it matter for data integrity?" <em style="color:var(--muted);font-size:0.85em">→ commit-after-write, enable_auto_commit=False</em></li>
+                <li>"What AWS services have you used to monitor production applications?" <em style="color:var(--muted);font-size:0.85em">→ CloudWatch logs/metrics, alarms, Container Insights</em></li>
+              </ul>
+            </div>
+            <div>
+              <h3>Behavioral</h3>
+              <ul>
+                <li>"Tell me about a production incident you owned end-to-end. What was your process?" <em style="color:var(--muted);font-size:0.85em">→ use the incident lifecycle: detect → triage → mitigate → postmortem</em></li>
+                <li>"How do you handle 5 support tickets at once during market hours?" <em style="color:var(--muted);font-size:0.85em">→ severity triage, acknowledge all, serial focus</em></li>
+                <li>"Describe a time you had to explain a technical failure to a non-technical stakeholder." <em style="color:var(--muted);font-size:0.85em">→ clear impact statement, ETA, no jargon</em></li>
+                <li>"How do you stay current with protocol changes from exchanges?" <em style="color:var(--muted);font-size:0.85em">→ vendor advisories, test environments, runbooks</em></li>
+                <li>"Tell me about a process you improved or documented that saved future toil." <em style="color:var(--muted);font-size:0.85em">→ runbook, automation, alerting</em></li>
+              </ul>
+              <div class="tip">
+                DRW handles 2–10 user support requests daily plus pipeline monitoring. Frame your answers around high-stakes, time-pressured triage — not helpdesk ticket volume.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interview slide 2: App Support — Questions you ask them -->
+        <div class="slide" id="interview-1">
+          <h2>Application Support Engineer — Questions to Ask Them</h2>
+          <p style="font-size:0.82em;color:var(--muted);margin:-8px 0 14px">Ask these to show depth and evaluate fit — especially for DRW's Unified Platform Support role</p>
+          <div class="cols">
+            <div>
+              <h3>Role &amp; Team</h3>
+              <ul>
+                <li>"What does a typical P1 look like on this team — what's the blast radius and how is it handled?"</li>
+                <li>"How is on-call structured? What's the escalation path?"</li>
+                <li>"What's the split between reactive support and proactive improvement work?"</li>
+                <li>"How do support engineers collaborate with the development teams when a bug needs a code fix?"</li>
+                <li>"What does the onboarding process look like for new exchanges or data feeds — who drives that?"</li>
+              </ul>
+            </div>
+            <div>
+              <h3>Systems &amp; Environment</h3>
+              <ul>
+                <li>"Which exchanges and venues does the platform currently support, and are there any planned additions?"</li>
+                <li>"What observability tooling is in place — CloudWatch, Prometheus, Grafana, something custom?"</li>
+                <li>"How are runbooks maintained — is there a culture of keeping them up to date after incidents?"</li>
+                <li>"How mature is the Kubernetes/EKS footprint — are engineers expected to operate at the cluster level or mostly at the application level?"</li>
+                <li>"What does success look like in the first 90 days for someone in this role?"</li>
+              </ul>
+              <div class="note">
+                DRW is a proprietary trading firm — avoid asking about the trading strategies. Focus questions on engineering depth, tooling, and team culture.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interview slide 3: Market Data Engineer — What they'll ask -->
+        <div class="slide" id="interview-2">
+          <h2>Market Data Engineer — What They'll Ask You</h2>
+          <div class="cols">
+            <div>
+              <h3>Technical</h3>
+              <ul>
+                <li>"Walk me through how ITCH data flows from the exchange to a researcher's desk." <em style="color:var(--muted);font-size:0.85em">→ UDP multicast → feed handler → Kafka → tick store → HDF5</em></li>
+                <li>"How does your feed handler detect and recover from a sequence gap?" <em style="color:var(--muted);font-size:0.85em">→ gap detect, snapshot request, incremental replay</em></li>
+                <li>"Explain the difference between ITCH and OUCH." <em style="color:var(--muted);font-size:0.85em">→ ITCH=outbound market data, OUCH=inbound order entry</em></li>
+                <li>"How do you ensure exactly-once delivery of market data into a tick store?" <em style="color:var(--muted);font-size:0.85em">→ idempotent writes, commit-after-write, UPSERT</em></li>
+                <li>"You have A-feed and B-feed — how do you merge them without duplicates?" <em style="color:var(--muted);font-size:0.85em">→ dedupe by sequence number, first-seen wins</em></li>
+                <li>"What's a Level 2 order book and how do you build one from ITCH messages?" <em style="color:var(--muted);font-size:0.85em">→ A/D/U messages, price levels, bid/ask maps</em></li>
+                <li>"How do you detect a partial write in an HDF5 file?" <em style="color:var(--muted);font-size:0.85em">→ compare shape vs expected row count for the trading day</em></li>
+              </ul>
+            </div>
+            <div>
+              <h3>Behavioral</h3>
+              <ul>
+                <li>"Tell me about a time a data quality issue made it downstream before it was caught. What happened?" <em style="color:var(--muted);font-size:0.85em">→ detection gap, impact, what alerting you added</em></li>
+                <li>"How do you validate that a new exchange feed is producing accurate data before going live?" <em style="color:var(--muted);font-size:0.85em">→ cross-feed comparison, reference data, replay testing</em></li>
+                <li>"Describe how you'd onboard a new venue's native binary protocol." <em style="color:var(--muted);font-size:0.85em">→ spec review, SBE decoder, integration tests, staging replay</em></li>
+              </ul>
+              <div class="tip">
+                Market Data Engineer interviews go deep on protocol specs. Be ready to decode a binary message header on a whiteboard — know field offsets, SBE primitives, and message type bytes cold.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interview slide 4: Market Data Engineer — Questions to ask -->
+        <div class="slide" id="interview-3">
+          <h2>Market Data Engineer — Questions to Ask Them</h2>
+          <div class="cols">
+            <div>
+              <h3>Architecture &amp; Scale</h3>
+              <ul>
+                <li>"How many venues and symbols does the platform currently ingest, and what's the peak message rate?"</li>
+                <li>"Is the feed handling infrastructure custom-built or based on open-source components like QuickFIX or Aeron?"</li>
+                <li>"How do you handle exchange-side restatements or corrections to historical data?"</li>
+                <li>"What's the latency target from exchange UDP packet to tick store write — microseconds, milliseconds?"</li>
+                <li>"Are you doing kernel bypass (DPDK, Solarflare) at the NIC level, or standard kernel networking?"</li>
+              </ul>
+            </div>
+            <div>
+              <h3>Team &amp; Process</h3>
+              <ul>
+                <li>"Who is the primary consumer of the market data — quant researchers, algo traders, both?"</li>
+                <li>"How do engineers validate new feed handler builds against production traffic before cutover?"</li>
+                <li>"What's your testing strategy for protocol decoder changes — do you have a replay harness?"</li>
+                <li>"How are exchange spec updates handled — who owns the integration work when NASDAQ releases a new ITCH version?"</li>
+                <li>"What does the career path look like from this role — toward infra, quant tooling, or something else?"</li>
+              </ul>
+              <div class="note">
+                The "what's the latency target" question tells you immediately how performance-sensitive the role is and whether it's operational or research-data focused.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interview slide 5: Data Ops Analyst — What they'll ask -->
+        <div class="slide" id="interview-4">
+          <h2>Data Ops Analyst — What They'll Ask You</h2>
+          <div class="cols">
+            <div>
+              <h3>Technical</h3>
+              <ul>
+                <li>"How would you write a SQL query to find all symbols that appear in Feed A but not Feed B for a given trading day?" <em style="color:var(--muted);font-size:0.85em">→ EXCEPT or LEFT JOIN IS NULL pattern</em></li>
+                <li>"An Airflow DAG is stuck — how do you diagnose it?" <em style="color:var(--muted);font-size:0.85em">→ task logs, sensor mode=reschedule, execution_date vs now()</em></li>
+                <li>"How do you calculate VWAP for a symbol across a trading session?" <em style="color:var(--muted);font-size:0.85em">→ SUM(price*volume)/SUM(volume)</em></li>
+                <li>"A pipeline writes to S3 daily. How do you detect a partial or missing load?" <em style="color:var(--muted);font-size:0.85em">→ row count check, file size threshold, completeness assertion</em></li>
+                <li>"What's the risk of using datetime.now() in an Airflow task, and how do you fix it?" <em style="color:var(--muted);font-size:0.85em">→ use {{ ds }}/execution_date for idempotency</em></li>
+                <li>"How would you identify a sequence gap in a table of time-series tick data using SQL?" <em style="color:var(--muted);font-size:0.85em">→ LAG(seq_num) OVER (ORDER BY ts) and filter where diff &gt; 1</em></li>
+              </ul>
+            </div>
+            <div>
+              <h3>Behavioral</h3>
+              <ul>
+                <li>"Tell me about a data quality issue you caught before it affected downstream consumers." <em style="color:var(--muted);font-size:0.85em">→ detection method, impact prevented, monitoring added</em></li>
+                <li>"How do you make a pipeline re-runnable without duplicating data?" <em style="color:var(--muted);font-size:0.85em">→ UPSERT / INSERT OR REPLACE, idempotent writes, {{ ds }} partitioning</em></li>
+                <li>"How do you prioritize when three pipelines fail at the same time?" <em style="color:var(--muted);font-size:0.85em">→ downstream consumer impact, market hours, data freshness SLA</em></li>
+                <li>"Describe how you'd onboard a new data source into an existing pipeline." <em style="color:var(--muted);font-size:0.85em">→ schema validation, backfill strategy, quality checks, stakeholder sign-off</em></li>
+              </ul>
+              <div class="warn">
+                Data Ops interviews often include a live SQL exercise. Practice writing LAG(), window functions, and self-joins without looking them up.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interview slide 6: Data Ops Analyst — Questions to ask -->
+        <div class="slide" id="interview-5">
+          <h2>Data Ops Analyst — Questions to Ask Them</h2>
+          <div class="cols">
+            <div>
+              <h3>Data &amp; Pipelines</h3>
+              <ul>
+                <li>"What's the primary data store — time-series DB, HDF5, Parquet on S3, a data warehouse?"</li>
+                <li>"How mature is the data quality monitoring — are there automated checks on every pipeline run, or is it mostly reactive?"</li>
+                <li>"What's the SLA for data freshness — when researchers arrive in the morning, how stale can yesterday's data be?"</li>
+                <li>"How do backfills work — can a pipeline safely re-run for a historical date range without human intervention?"</li>
+                <li>"What's the volume of data being ingested daily — GB, TB? How does that affect how you approach schema design?"</li>
+              </ul>
+            </div>
+            <div>
+              <h3>Team &amp; Growth</h3>
+              <ul>
+                <li>"Who are the primary consumers of the data — quant researchers, risk, compliance, all of the above?"</li>
+                <li>"How much of the role is incident response vs building new pipelines vs improving existing ones?"</li>
+                <li>"What orchestration tooling is in use — Airflow, Prefect, something in-house?"</li>
+                <li>"How does this team collaborate with the data engineering and quant research teams?"</li>
+                <li>"What skills or knowledge would set someone apart in this role six months in — is it SQL depth, domain knowledge, or something else?"</li>
+              </ul>
+              <div class="tip">
+                "What skills would set someone apart six months in" is one of the best questions you can ask — it tells you what they actually value and gives you a roadmap if you get the job.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="slide-nav">
+        <button class="nav-btn" id="prev-interview" onclick="nav('interview',-1)" disabled>← Prev</button>
+        <div class="dots" id="dots-interview"></div>
+        <button class="nav-btn" id="next-interview" onclick="nav('interview',1)">Next →</button>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -3793,7 +4006,7 @@ const state = {};   // { deckId: currentIndex }
 const COUNTS = {
   fix: 22, kafka: 8, k8s: 9, marketdata: 8,
   sql: 7, airflow: 8, linux: 6, python: 5,
-  aws: 5, networking: 4, git: 4, support: 7
+  aws: 5, networking: 4, git: 4, support: 7, interview: 6
 };
 
 // ── Init ──
