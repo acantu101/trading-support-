@@ -28,6 +28,7 @@ from common import (
     save_pid as _save_pid, load_pids as _load_pids,
     spawn as _spawn, kill_pids, kill_strays, remove_lab_dir,
     show_status as _show_status,
+    run_menu,
 )
 
 LAB_ROOT = Path("/tmp/lab_fix")
@@ -1194,30 +1195,15 @@ SCENARIO_MAP = {
     99: (launch_scenario_99, "     ALL scenarios"),
 }
 
-def main():
-    parser = argparse.ArgumentParser(description="FIX Protocol Challenge Lab Setup",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="\n".join(f"  {k:<4} {v}" for k, (_, v) in SCENARIO_MAP.items()))
-    parser.add_argument("--scenario", "-s", type=int, choices=list(SCENARIO_MAP.keys()))
-    parser.add_argument("--teardown", "-t", action="store_true")
-    parser.add_argument("--status",         action="store_true")
-    args = parser.parse_args()
-    if args.teardown: teardown(); return
-    if args.status:   show_status(); return
+def _setup():
     create_dirs()
     write_sample_messages()
-    if args.scenario:
-        fn, _ = SCENARIO_MAP[args.scenario]; fn()
-    else:
-        header("FIX Protocol Challenge Lab")
-        for num, (_, desc) in SCENARIO_MAP.items():
-            print(f"    {num:<4} {desc}")
-        choice = input("\n  Enter scenario number (or q): ").strip()
-        if choice.lower() == "q": return
-        try:
-            fn, _ = SCENARIO_MAP[int(choice)]; fn()
-        except (KeyError, ValueError): err(f"Invalid: {choice}")
-    lab_footer("lab_fix.py")
+
+
+def main():
+    run_menu(SCENARIO_MAP, "FIX Protocol Challenge Lab",
+             setup_fn=_setup, teardown_fn=teardown, status_fn=show_status,
+             script_name="lab_fix.py")
 
 if __name__ == "__main__":
     main()

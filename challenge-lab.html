@@ -630,8 +630,187 @@
     transition: all 0.12s;
   }
   .quiz-reset-btn:hover { border-color: var(--muted); color: var(--text); }
+
+  /* ── Scenario Lab ── */
+  .scenario-launch-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+  .scenario-launch-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .scenario-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--surface);
+    border-top: 2px solid var(--accent);
+    z-index: 200;
+    flex-direction: column;
+  }
+  .scenario-modal.open { display: flex; }
+
+  .scenario-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.2);
+  }
+  .scenario-modal-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .scenario-modal-close {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 11px;
+    font-family: var(--mono);
+    padding: 2px 10px;
+    border-radius: 4px;
+    transition: all 0.12s;
+  }
+  .scenario-modal-close:hover { color: var(--text); border-color: var(--muted); }
+
+  .scenario-modal-body {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .scenario-desc-pane {
+    padding: 16px 20px;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+  }
+  .scenario-deck-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .scenario-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+  .scenario-badges { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .scenario-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 9px;
+    border-radius: 10px;
+    border: 1px solid;
+  }
+  .scenario-badge.diff-beginner      { color: #22c55e; border-color: #22c55e; }
+  .scenario-badge.diff-intermediate  { color: #e8c860; border-color: #e8c860; }
+  .scenario-badge.diff-advanced      { color: #f87171; border-color: #f87171; }
+  .scenario-badge.time-badge         { color: var(--blue); border-color: var(--blue); }
+
+  .scenario-section-lbl {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  .scenario-desc-text {
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .scenario-obj-list { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+  .scenario-obj-list li {
+    display: flex; gap: 8px;
+    font-size: 12px; color: var(--muted); line-height: 1.5;
+  }
+  .scenario-obj-list li::before { content: "○"; color: var(--accent); flex-shrink: 0; }
+
+  .scenario-step-label {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.07em;
+    margin-top: 10px; margin-bottom: 4px;
+  }
+  .scenario-cmd {
+    display: block;
+    font-family: var(--mono); font-size: 11px;
+    background: #0d0d14; border: 1px solid var(--border);
+    color: var(--blue); padding: 6px 10px; border-radius: 4px;
+    white-space: pre-wrap; word-break: break-all;
+    margin-bottom: 4px; cursor: text; user-select: all;
+  }
+  .scenario-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .scenario-tool-tag {
+    font-family: var(--mono); font-size: 10px;
+    background: rgba(128,200,255,0.08); border: 1px solid rgba(128,200,255,0.2);
+    color: var(--blue); padding: 2px 8px; border-radius: 10px;
+  }
+  .scenario-divider {
+    height: 1px; background: var(--border); margin: 14px 0;
+  }
+
+  .scenario-terminal-pane { display: flex; flex-direction: column; overflow: hidden; }
+
+  .terminal-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.25);
+  }
+  .terminal-toolbar-label {
+    font-family: var(--mono); font-size: 10px; color: var(--muted); margin-right: auto;
+  }
+  .terminal-status { font-family: var(--mono); font-size: 10px; }
+  .terminal-status.connected    { color: #22c55e; }
+  .terminal-status.connecting   { color: #e8c860; }
+  .terminal-status.disconnected { color: var(--muted); }
+
+  .term-btn {
+    background: var(--accent); color: #fff; border: none;
+    cursor: pointer; font-family: var(--mono); font-size: 10px;
+    padding: 3px 12px; border-radius: 4px; transition: opacity 0.12s;
+  }
+  .term-btn:hover { opacity: 0.85; }
+  .term-btn:disabled { opacity: 0.4; cursor: default; }
+  .term-btn.disconnect {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .term-btn.disconnect:hover { color: var(--red); border-color: var(--red); }
+
+  #xterm-container {
+    flex: 1; overflow: hidden; padding: 4px 6px; background: #0d0d14;
+  }
+  .xterm { height: 100%; }
+  .xterm-viewport { background: #0d0d14 !important; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
 </head>
 <body>
 
@@ -720,6 +899,11 @@
       <span class="badge">7</span>
     </div>
     <div class="nav-child" onclick="showDeckAt('interview',-1)" id="qnav-interview">Knowledge Check</div>
+    <div class="nav-item" onclick="showDeck('darkpool')" id="nav-darkpool">
+      <span class="nav-dot"></span> Dark Pools
+      <span class="badge">9</span>
+    </div>
+    <div class="nav-child" onclick="showDeckAt('darkpool',-1)" id="qnav-darkpool">Knowledge Check</div>
   </aside>
 
   <!-- ── Main ── -->
@@ -5197,7 +5381,366 @@ If unresolved after 20 min → page @senior-oncall</div>
       </div>
     </div>
 
+    <!-- ════════════════ DARK POOLS ════════════════ -->
+    <div class="deck" id="deck-darkpool">
+      <div class="deck-bar">
+        <div class="deck-info">
+          <span class="deck-icon">🌑</span>
+          <div>
+            <div class="deck-label">Dark Pools</div>
+            <div class="deck-desc">ATS mechanics, TRF reporting, order types, adverse selection, regulatory landscape</div>
+          </div>
+        </div>
+        <div class="deck-meta">
+          <div class="kbd-hint"><kbd>←</kbd><kbd>→</kbd> navigate</div>
+          <div class="deck-counter" id="ctr-darkpool"><strong>1</strong> / 9</div>
+        </div>
+      </div>
+      <div class="slides-wrap" id="slides-darkpool">
+
+        <!-- ── DP1 ── -->
+        <div class="slide active">
+          <div class="sl-num">DARK POOLS · SLIDE 1 / 9</div>
+          <div class="sl-title">What Are Dark Pools?</div>
+          <div class="sl-sub">Alternative Trading Systems (ATS) built for large institutional block orders with minimal market impact</div>
+          <div class="sl-rule"></div>
+          <div class="flow" style="flex-wrap:wrap;gap:6px;margin-bottom:18px">
+            <div class="flow-box">Institutional Order<br><small>e.g. 10M shares MSFT</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box" style="background:rgba(106,74,187,0.12);border-color:rgba(106,74,187,0.4)">SOR / Broker<br><small>routes to dark</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box" style="background:rgba(0,0,0,0.4);border-color:#555">Dark Pool ATS<br><small>no public quote</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box">Fill at Midpoint<br><small>no price impact</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box">TRF Report<br><small>post-trade, ≤10s</small></div>
+          </div>
+          <table>
+            <tr><th>Fact</th><th>Detail</th></tr>
+            <tr><td>What</td><td>Private ATS where large orders match without pre-trade quote visibility</td></tr>
+            <tr><td>Why</td><td>Large lit-market orders move price before fill — dark pools hide intent</td></tr>
+            <tr><td>Volume</td><td>~35–40% of US equity daily share volume trades in dark venues</td></tr>
+            <tr><td>Who</td><td>Institutional investors, hedge funds, asset managers, HFTs (select venues)</td></tr>
+            <tr><td>Key venues</td><td>Sigma X (GS), Luminex, POSIT (Virtu/ITG), IEX, JPM-X, MS Pool</td></tr>
+          </table>
+        </div>
+
+        <!-- ── DP2 ── -->
+        <div class="slide">
+          <div class="sl-num">DARK POOLS · SLIDE 2 / 9</div>
+          <div class="sl-title">Dark Pool Types</div>
+          <div class="sl-sub">Three categories — who runs it determines the matching logic and participant mix</div>
+          <div class="sl-rule"></div>
+          <div class="cols cols-3">
+            <div class="card">
+              <h3>Broker-Dealer Dark Pools</h3>
+              <ul>
+                <li>Operated by major banks and brokers</li>
+                <li>Goldman Sigma X, MS Pool, JPM-X</li>
+                <li>Match client vs client, or client vs proprietary flow</li>
+                <li>Potential conflict of interest with broker's own book</li>
+                <li>Regulatory scrutiny — SEC/FINRA fines issued to several</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Exchange-Operated Dark</h3>
+              <ul>
+                <li>Run by registered exchanges</li>
+                <li>NASDAQ Crossing Sessions (XNGS)</li>
+                <li>NYSE Arca Midpoint Passive Liquidity</li>
+                <li>Same oversight as lit exchange, stricter rules</li>
+                <li>Less conflict concern — no prop trading</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Independent / Consortium</h3>
+              <ul>
+                <li>Buy-side only — no HFT or broker prop</li>
+                <li>Liquidnet — connects buy-side institutions</li>
+                <li>IEX — speed bump (350 μs) to curb HFT</li>
+                <li>Virtu POSIT — IOI-based block matching</li>
+                <li>Lower adverse selection risk</li>
+              </ul>
+            </div>
+          </div>
+          <div class="warn" style="margin-top:14px"><strong>Support context:</strong> Connectivity issues, order rejections, and TRF failures differ by venue type. Always identify which ATS before escalating.</div>
+        </div>
+
+        <!-- ── DP3 ── -->
+        <div class="slide">
+          <div class="sl-num">DARK POOLS · SLIDE 3 / 9</div>
+          <div class="sl-title">Pre-Trade vs Post-Trade Transparency</div>
+          <div class="sl-sub">Dark pools are dark pre-trade — but full post-trade reporting is mandatory</div>
+          <div class="sl-rule"></div>
+          <div class="cols">
+            <div class="card">
+              <h3>Lit Market (Exchange)</h3>
+              <ul>
+                <li>All bids/offers visible in public order book</li>
+                <li>Real-time L1/L2/L3 via ITCH / OPRA</li>
+                <li>Price discovery is public and continuous</li>
+                <li>Post-trade: SIP consolidated tape (CTA/UTP)</li>
+                <li>NBBO derived from lit exchange quotes</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Dark Pool (ATS)</h3>
+              <ul>
+                <li>No pre-trade quote visible to the market</li>
+                <li>Orders match internally — no public book</li>
+                <li>Price derived from NBBO midpoint</li>
+                <li>Post-trade: reported via TRF within 10 seconds</li>
+                <li>Biweekly ATS volume published by FINRA (Rule 4552)</li>
+              </ul>
+            </div>
+          </div>
+          <table style="margin-top:14px">
+            <tr><th>Dimension</th><th>Lit Exchange</th><th>Dark Pool ATS</th></tr>
+            <tr><td>Pre-trade quote</td><td>Public (ITCH / SIP)</td><td>None — hidden by design</td></tr>
+            <tr><td>Post-trade report</td><td>SIP tape (CTA/UTP)</td><td>TRF → SIP tape (ATS marker)</td></tr>
+            <tr><td>Price discovery</td><td>Continuous auction</td><td>Reference NBBO midpoint</td></tr>
+            <tr><td>Reg oversight</td><td>Exchange rules + SEC</td><td>Reg ATS + FINRA</td></tr>
+          </table>
+        </div>
+
+        <!-- ── DP4 ── -->
+        <div class="slide">
+          <div class="sl-num">DARK POOLS · SLIDE 4 / 9</div>
+          <div class="sl-title">Trade Reporting Facilities (TRF)</div>
+          <div class="sl-sub">How dark pool executions become public post-trade data</div>
+          <div class="sl-rule"></div>
+          <ul style="margin-bottom:14px">
+            <li><strong>FINRA/NYSE TRF</strong> and <strong>FINRA/Nasdaq TRF</strong> — the two US equity TRFs; firms choose one to report through</li>
+            <li><strong>Reporting window:</strong> within <em>10 seconds</em> of execution for regular-session trades</li>
+            <li><strong>OTC Reporting Facility (ORF):</strong> for OTC equity and some ETP trades</li>
+            <li><strong>Output:</strong> flows into SIP consolidated tape — trade prints labeled with venue and sale conditions</li>
+            <li><strong>FINRA Rule 4552:</strong> ATS operators must publish biweekly volume stats per symbol</li>
+          </ul>
+          <table>
+            <tr><th>TRF Field</th><th>Example</th><th>Notes</th></tr>
+            <tr><td>Symbol</td><td>AAPL</td><td>Root symbol, no suffix</td></tr>
+            <tr><td>Price</td><td>182.4700</td><td>4 decimal places; must be within NBBO</td></tr>
+            <tr><td>Shares</td><td>50000</td><td>Whole shares only</td></tr>
+            <tr><td>Timestamp</td><td>14:28:47.334192000</td><td>Nanosecond precision (FINRA)</td></tr>
+            <tr><td>Sale Condition</td><td>@ (space)</td><td><code>@</code> = regular sale; <code>.T</code> = extended hours</td></tr>
+            <tr><td>Report Venue</td><td>D</td><td><code>D</code> = FINRA TRF; marks trade as OTC/dark</td></tr>
+          </table>
+          <pre style="margin-top:14px"><span class="cm"># TRF submission failure — what support sees</span>
+<span class="str">14:28:47.601</span> ERROR TRF_SUBMIT failed sym=AAPL price=182.47 qty=50000 reason=PRICE_OUTSIDE_NBBO
+<span class="str">14:28:47.602</span> WARN  Trade will be late-reported — SLA breach if not resolved within <span class="kw">10s</span></pre>
+        </div>
+
+        <!-- ── DP5 ── -->
+        <div class="slide">
+          <div class="sl-num">DARK POOLS · SLIDE 5 / 9</div>
+          <div class="sl-title">Dark Pool Order Types</div>
+          <div class="sl-sub">Order semantics differ from lit markets — understanding them is key to diagnosing fill complaints</div>
+          <div class="sl-rule"></div>
+          <table>
+            <tr><th>Order Type</th><th>Behaviour</th><th>Why used in dark</th></tr>
+            <tr><td><strong>IOC</strong> — Immediate or Cancel</td><td>Fill whatever matches right now; cancel remainder instantly</td><td>No resting in book; zero leakage risk</td></tr>
+            <tr><td><strong>FOK</strong> — Fill or Kill</td><td>Fill the entire quantity or cancel entirely</td><td>Block trades — partial fill is unacceptable for large orders</td></tr>
+            <tr><td><strong>Midpoint Peg</strong></td><td>Price dynamically tracks NBBO midpoint throughout order life</td><td>Fair price without revealing limit; immune to quote stuffing</td></tr>
+            <tr><td><strong>Reserve / Iceberg</strong></td><td>Shows only a slice (e.g., 1K of 100K shares) in the pool</td><td>Masks true size; replenishes display qty on partial fill</td></tr>
+            <tr><td><strong>Minimum Quantity</strong></td><td>Will not execute unless counterparty meets minimum threshold</td><td>Block-only liquidity; avoids toxic retail-size fills</td></tr>
+            <tr><td><strong>VWAP Peg</strong></td><td>Tracks intraday VWAP; executes in slices over a time window</td><td>Achieves benchmark price passively through the day</td></tr>
+          </table>
+          <div class="warn" style="margin-top:14px"><strong>Common ticket:</strong> "My FOK didn't fill" — no counterparty could match the full quantity at that moment. Full cancel is correct FOK behaviour, not an error.</div>
+        </div>
+
+        <!-- ── DP6 ── -->
+        <div class="slide">
+          <div class="sl-num">DARK POOLS · SLIDE 6 / 9</div>
+          <div class="sl-title">Connectivity &amp; Protocols</div>
+          <div class="sl-sub">How orders reach dark pools — and how support engineers monitor the pipelines</div>
+          <div class="sl-rule"></div>
+          <div class="cols">
+            <div class="card">
+              <h3>Order Routing</h3>
+              <ul>
+                <li><strong>FIX 4.2 / 4.4 / 5.0</strong> — standard for ATS connectivity</li>
+                <li><strong>OUCH (binary)</strong> — Nasdaq-style low-latency alternative</li>
+                <li><strong>SOR (Smart Order Router)</strong> — slices orders across dark + lit venues</li>
+                <li><strong>IOI (Indications of Interest)</strong> — selective pre-trade signals between buy-side and ATS</li>
+                <li><strong>FIX tag 18</strong> (ExecInst) — encodes peg type, min-qty, IOC/FOK</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Connectivity Checks</h3>
+              <ul>
+                <li>FIX session state: LOGON / LOGOUT / RESEND REQUEST</li>
+                <li>Heartbeat (tag 108) — typically 30 s; missed = session drop</li>
+                <li>Sequence number reset at SOD — mismatch causes reject storm</li>
+                <li>TCP port/IP whitelist — firewall change = silent drops</li>
+                <li>TLS cert expiry — ATS rejects unencrypted connections</li>
+              </ul>
+            </div>
+          </div>
+          <pre style="margin-top:14px"><span class="cm"># FIX NewOrderSingle to dark pool (simplified)</span>
+<span class="str">8</span>=FIX.4.4 | <span class="str">35</span>=D | <span class="str">49</span>=CLIENT_COMP | <span class="str">56</span>=DARK_ATS
+<span class="str">55</span>=AAPL | <span class="str">54</span>=1 | <span class="str">38</span>=50000 | <span class="str">40</span>=P   <span class="cm"># tag 40=P → Pegged order type</span>
+<span class="str">18</span>=Mb               <span class="cm"># ExecInst: M=midpoint peg, b=minimum-qty constraint</span>
+<span class="str">110</span>=1000            <span class="cm"># MinQty — will not execute below 1000 shares</span></pre>
+        </div>
+
+        <!-- ── DP7 ── -->
+        <div class="slide">
+          <div class="sl-num">DARK POOLS · SLIDE 7 / 9</div>
+          <div class="sl-title">Adverse Selection &amp; TCA</div>
+          <div class="sl-sub">Execution quality metrics — what support engineers investigate when traders complain about fills</div>
+          <div class="sl-rule"></div>
+          <div class="cols">
+            <div class="card">
+              <h3>Key Concepts</h3>
+              <ul>
+                <li><strong>Adverse selection:</strong> filled by an informed counterparty just before price moves against you</li>
+                <li><strong>Fill rate:</strong> % of order quantity that executes in the dark venue</li>
+                <li><strong>Arrival cost:</strong> price at fill vs price at order submission</li>
+                <li><strong>Market impact:</strong> permanent price shift caused by revealing your order</li>
+                <li><strong>Information leakage:</strong> IOIs or order flow revealing intent before fill</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>TCA Dashboard — What to Pull</h3>
+              <ul>
+                <li>Slippage vs NBBO midpoint at time of submission</li>
+                <li>Fill venue breakdown: dark % vs lit %</li>
+                <li>Adverse selection score per venue over 30 days</li>
+                <li>VWAP comparison — did client beat benchmark?</li>
+                <li>Latency from order receipt to TRF print</li>
+              </ul>
+            </div>
+          </div>
+          <table style="margin-top:14px">
+            <tr><th>Metric</th><th>Good</th><th>Concerning</th></tr>
+            <tr><td>Fill rate (dark)</td><td>&gt; 60% of target qty filled dark</td><td>&lt; 20% — SOR not routing correctly</td></tr>
+            <tr><td>Arrival cost (buy)</td><td>≤ 0 bps (at or below arrival price)</td><td>&gt; 5 bps — possible adverse selection</td></tr>
+            <tr><td>TRF report latency</td><td>&lt; 3 s</td><td>&gt; 10 s — regulatory SLA breach</td></tr>
+          </table>
+        </div>
+
+        <!-- ── DP8 ── -->
+        <div class="slide">
+          <div class="sl-num">DARK POOLS · SLIDE 8 / 9</div>
+          <div class="sl-title">Regulatory Framework &amp; Support Tickets</div>
+          <div class="sl-sub">What governs dark pools — and the tickets that land in the support queue</div>
+          <div class="sl-rule"></div>
+          <div class="cols">
+            <div class="card">
+              <h3>Key Regulations</h3>
+              <ul>
+                <li><strong>Reg ATS (1998):</strong> ATS must register with SEC if daily volume &gt; 5% of national volume in a security</li>
+                <li><strong>Rule 606:</strong> Brokers must quarterly disclose order routing venues and payment arrangements</li>
+                <li><strong>FINRA Rule 4552:</strong> ATS reports biweekly share volume per symbol — published publicly</li>
+                <li><strong>Rule 15c3-5 (Market Access):</strong> Pre-trade risk controls required before routing to any ATS</li>
+                <li><strong>Reg NMS Rule 611:</strong> Trade-through protection — dark fills must not be at worse price than NBBO</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Common Support Tickets</h3>
+              <ul>
+                <li>TRF submission failure (PRICE_OUTSIDE_NBBO, session drop)</li>
+                <li>FIX session reset — sequence mismatch at SOD causing reject storm</li>
+                <li>IOI not reaching counterparty — network or config issue</li>
+                <li>Fill rate drop — SOR config change or dark pool capacity issue</li>
+                <li>Execution quality complaint — TCA pull + adverse selection analysis</li>
+                <li>Late TRF report — breach of 10-second reporting obligation</li>
+              </ul>
+            </div>
+          </div>
+          <div class="warn" style="margin-top:10px"><strong>Escalation path:</strong> ATS ops → FINRA Market Regulation (TRF issues) → SEC (systematic ATS violations). Always document the timeline and error codes before escalating.</div>
+        </div>
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">DARK POOLS · SLIDE 9 / 9</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Dark Pools — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-darkpool">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">1. What is the post-trade reporting window for a US equity dark pool execution?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-1" value="A"><span class="quiz-key">A</span>30 seconds</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-1" value="B"><span class="quiz-key">B</span>10 seconds via TRF</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-1" value="C"><span class="quiz-key">C</span>End of trading session</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-1" value="D"><span class="quiz-key">D</span>60 seconds</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">2. Which FINRA rule requires ATS operators to publish biweekly per-symbol volume statistics?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-2" value="A"><span class="quiz-key">A</span>Rule 606</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-2" value="B"><span class="quiz-key">B</span>Reg ATS</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-2" value="C"><span class="quiz-key">C</span>FINRA Rule 4552</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-2" value="D"><span class="quiz-key">D</span>Rule 15c3-5</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">3. A client's FOK order to the dark pool received no fill. What is the most likely correct explanation?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-3" value="A"><span class="quiz-key">A</span>The TRF submission timed out</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-3" value="B"><span class="quiz-key">B</span>The FIX session dropped</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-3" value="C"><span class="quiz-key">C</span>The SOR routed to a lit venue instead</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-3" value="D"><span class="quiz-key">D</span>No counterparty matched the full quantity — correct FOK behaviour</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="A">
+                <div class="quiz-q-text">4. What does "adverse selection" mean in a dark pool context?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-4" value="A"><span class="quiz-key">A</span>Being filled by an informed trader just before price moves against you</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-4" value="B"><span class="quiz-key">B</span>Routing to the wrong dark venue</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-4" value="C"><span class="quiz-key">C</span>Failing to report a trade to the TRF in time</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-4" value="D"><span class="quiz-key">D</span>A FIX sequence number mismatch at session open</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">5. Which FIX tag 40 value indicates a pegged order when routing to a dark pool?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-5" value="A"><span class="quiz-key">A</span>1 — Market</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-5" value="B"><span class="quiz-key">B</span>P — Pegged</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-5" value="C"><span class="quiz-key">C</span>2 — Limit</label>
+                  <label class="quiz-opt"><input type="radio" name="q-darkpool-5" value="D"><span class="quiz-key">D</span>F — Forex Limit</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('darkpool')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-darkpool"></span>
+              <button class="quiz-reset-btn" id="reset-darkpool" onclick="resetQuiz('darkpool')">Try Again</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-nav">
+        <button class="nav-btn" id="prev-darkpool" onclick="nav('darkpool',-1)" disabled>← Prev</button>
+        <div class="dots" id="dots-darkpool"></div>
+        <button class="nav-btn" id="next-darkpool" onclick="nav('darkpool',1)">Next →</button>
+      </div>
+    </div>
+
   </main>
+</div>
+
+<!-- ════════════════ SCENARIO LAB MODAL ════════════════ -->
+<div class="scenario-modal" id="scenario-modal">
+  <div class="scenario-modal-header">
+    <span class="scenario-modal-title" id="scenario-modal-title">🖥 Scenario Lab</span>
+    <button class="scenario-modal-close" onclick="closeScenario()">✕ Close [Esc]</button>
+  </div>
+  <div class="scenario-modal-body">
+    <div class="scenario-desc-pane" id="scenario-desc-pane"></div>
+    <div class="scenario-terminal-pane">
+      <div class="terminal-toolbar">
+        <span class="terminal-toolbar-label">SSH Terminal → ws://localhost:7681 → <span id="ssh-target">127.0.0.1:2222</span></span>
+        <span class="terminal-status disconnected" id="terminal-status">● Disconnected</span>
+        <button class="term-btn" id="connect-btn" onclick="connectTerminal()">Connect</button>
+        <button class="term-btn disconnect" id="disconnect-btn" onclick="disconnectTerminal()" style="display:none">Disconnect</button>
+      </div>
+      <div id="xterm-container"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -5208,7 +5751,8 @@ const state = {};   // { deckId: currentIndex }
 const COUNTS = {
   fix: 23, kafka: 9, k8s: 10, marketdata: 9,
   sql: 8, airflow: 9, linux: 7, python: 9,
-  aws: 6, networking: 5, git: 5, support: 8, interview: 7
+  aws: 6, networking: 5, git: 5, support: 8, interview: 7,
+  darkpool: 9
 };
 
 // ── Init ──
@@ -5217,6 +5761,28 @@ function init() {
     state[id] = 0;
     buildDots(id);
     updateNav(id);
+
+    // Inject "🖥 Scenario Lab" button into each deck bar
+    const meta = document.querySelector('#deck-' + id + ' .deck-meta');
+    if (meta && !document.getElementById('scn-btn-' + id)) {
+      const btn = document.createElement('button');
+      btn.className = 'scenario-launch-btn';
+      btn.id = 'scn-btn-' + id;
+      btn.textContent = '🖥 Scenario Lab';
+      btn.onclick = function() { openScenario(id); };
+      meta.insertBefore(btn, meta.firstChild);
+    }
+
+    // Inject "↳ Scenario Lab" nav-child below each Knowledge Check child
+    const qnav = document.getElementById('qnav-' + id);
+    if (qnav && !document.getElementById('snav-' + id)) {
+      const snav = document.createElement('div');
+      snav.className = 'nav-child';
+      snav.id = 'snav-' + id;
+      snav.textContent = 'Scenario Lab';
+      snav.onclick = function() { showDeck(id); openScenario(id); };
+      qnav.after(snav);
+    }
   });
 }
 
@@ -5391,12 +5957,441 @@ document.addEventListener('change', e => {
 // ── Keyboard ──
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'Escape') { closeScenario(); return; }
+  if (document.getElementById('scenario-modal').classList.contains('open')) return;
   const active = document.querySelector('.deck.active');
   if (!active) return;
   const id = active.id.replace('deck-', '');
   if (e.key === 'ArrowRight') { e.preventDefault(); nav(id,  1); }
   if (e.key === 'ArrowLeft')  { e.preventDefault(); nav(id, -1); }
 });
+
+// ══════════════════════════════════════════════════════════
+// SCENARIO LAB
+// ══════════════════════════════════════════════════════════
+
+const SCENARIOS = {
+  fix: {
+    title: 'Session Sequence Number Gap',
+    deck: 'FIX Protocol', difficulty: 'intermediate', estimated: '20 min',
+    description: 'The OMS dropped connectivity to the exchange gateway during a network blip. When the FIX session reconnected, the OMS sent Logon(A) with ResetOnLogon=Y, but the counterparty expects sequence number 4892. Orders are now being rejected with a MsgSeqNum Too Low error (tag 49 mismatch). Investigate the session state and restore normal order flow.',
+    objectives: [
+      'Identify the current vs. expected sequence numbers on both sides',
+      'Determine whether to reset, retransmit, or send a SequenceReset(4)',
+      'Verify recovery by confirming a test NewOrderSingle is accepted',
+      'Document the incident steps for the trade desk'
+    ]
+  },
+  kafka: {
+    title: 'Consumer Lag Alert — Market Data Topic',
+    deck: 'Kafka', difficulty: 'intermediate', estimated: '25 min',
+    description: 'PagerDuty fired: consumer group md-normalizer on topic md.equities.raw has 280,000+ messages of lag across 6 partitions. The market data normalizer is falling behind, causing stale prices to propagate downstream to algos and risk systems. Real money is at risk.',
+    objectives: [
+      'Check per-partition lag using kafka-consumer-groups.sh',
+      'Determine if lag is isolated to one partition or spread across all',
+      'Check consumer instance count and resource utilisation',
+      'Identify the bottleneck: deserialization, downstream write, or network',
+      'Propose a remediation strategy (scale consumers, increase batch size, etc.)'
+    ]
+  },
+  k8s: {
+    title: 'Trading Pod CrashLoopBackOff',
+    deck: 'Kubernetes', difficulty: 'intermediate', estimated: '20 min',
+    description: 'The order router pod order-router-7f9d8b-xk2vp in namespace trading-ns is stuck in CrashLoopBackOff. The previous pod was healthy until a ConfigMap update was pushed 15 minutes ago. Traders on the floor report orders are piling up unrouted.',
+    objectives: [
+      'Retrieve crash logs from the current and previous container',
+      'Inspect the ConfigMap change that triggered the issue',
+      'Identify the misconfiguration causing the crash',
+      'Roll back or patch the ConfigMap and confirm the pod stabilises',
+      'Consider a PodDisruptionBudget to prevent future silent rollout outages'
+    ]
+  },
+  marketdata: {
+    title: 'Stale Quote Feed — AAPL NYSE',
+    deck: 'Market Data', difficulty: 'beginner', estimated: '15 min',
+    description: 'Risk monitoring alerted: AAPL bid/ask prices have not updated in 47 seconds. The NYSE feed normalizer is running but the symbol-level gap filter shows no recent messages for AAPL. All other NYSE symbols are updating normally. Algo strategies using AAPL quotes are trading on stale data.',
+    objectives: [
+      'Check the normalizer\'s per-symbol sequence number tracking for AAPL',
+      'Inspect the raw feed handler for multicast group membership issues',
+      'Verify the gap fill request / retransmission pipeline is operational',
+      'Confirm recovery by observing AAPL timestamps returning to real-time',
+      'File an incident report with the feed vendor'
+    ]
+  },
+  sql: {
+    title: 'Slow Trade Blotter Query',
+    deck: 'SQL', difficulty: 'beginner', estimated: '15 min',
+    description: 'The trade blotter web app is timing out for end-of-day reconciliation. The query SELECT * FROM trades WHERE symbol = ? AND trade_date = ? takes 28 seconds on a 40 million-row table. Compliance needs the report in 10 minutes.',
+    objectives: [
+      'Run EXPLAIN ANALYZE on the slow query',
+      'Identify the missing composite index on (symbol, trade_date)',
+      'Create the index without blocking writes (CREATE INDEX CONCURRENTLY)',
+      'Re-run the query and confirm sub-second execution',
+      'Add the index to the schema migration script'
+    ]
+  },
+  airflow: {
+    title: 'Settlement Pipeline DAG Failure',
+    deck: 'Airflow', difficulty: 'intermediate', estimated: '25 min',
+    description: 'The settlement_pipeline DAG has failed at the generate_settlement_files task for two consecutive runs. Settlement files were not delivered to DTCC by the T+1 deadline. Downstream reconciliation and fails reporting are blocked.',
+    objectives: [
+      'Retrieve task logs from the failed runs via CLI or UI',
+      'Identify the root cause: data issue, dependency timeout, or permissions',
+      'Fix the underlying issue and clear the failed task for backfill',
+      'Confirm the DAG completes successfully on manual trigger',
+      'Add an SLA miss alert to prevent silent failures going forward'
+    ]
+  },
+  linux: {
+    title: 'OMS Server High CPU — 95%',
+    deck: 'Linux', difficulty: 'beginner', estimated: '15 min',
+    description: 'Nagios alert: oms-server-01 CPU is at 95% for 8 minutes. OMS order response latency has spiked from 50µs to 12ms. The trading desk is reporting orders are slow to acknowledge. Market conditions are volatile — speed matters.',
+    objectives: [
+      'Use top/htop to identify the process consuming CPU',
+      'Use perf or strace to determine what the process is spending time on',
+      'Check for runaway threads, stuck GC, or an unexpected batch job',
+      'Mitigate immediately (renice or kill the competing process)',
+      'Determine whether the fix is temporary and schedule a proper remedy'
+    ]
+  },
+  python: {
+    title: 'Memory Leak in Quote Aggregator',
+    deck: 'Python', difficulty: 'advanced', estimated: '30 min',
+    description: 'The quote aggregation microservice has grown from 300 MB to 2.4 GB of heap over 24 hours — a clear leak. It aggregates NBBO quotes from 12 exchanges and publishes consolidated best bid/offer every 100 ms. OOM is projected in approximately 3 hours.',
+    objectives: [
+      'Attach to the running process with tracemalloc or memory_profiler',
+      'Identify the object type accumulating (likely a dict/list not being evicted)',
+      'Trace back to the code path that creates but never releases references',
+      'Apply a fix (bounded cache, weak references, or explicit cleanup) and verify heap stabilises',
+      'Expose a memory metric on the Prometheus endpoint to catch regressions'
+    ]
+  },
+  aws: {
+    title: 'S3 Trade Archive Upload Failure',
+    deck: 'AWS', difficulty: 'intermediate', estimated: '20 min',
+    description: 'The nightly batch job archive-trades is failing with AccessDenied when writing to s3://firm-trade-archive/daily/. This started after an IAM policy rotation last night. Three days of trade files are unarchived — a regulatory retention requirement is at risk.',
+    objectives: [
+      'Use aws sts get-caller-identity to confirm which role the job assumes',
+      'Reproduce the AccessDenied with aws s3 ls or aws s3 cp',
+      'Use IAM Policy Simulator or CloudTrail to trace the denial',
+      'Identify the missing s3:PutObject permission or incorrect bucket condition',
+      'Apply a least-privilege fix and confirm the upload succeeds'
+    ]
+  },
+  networking: {
+    title: 'Co-Location Packet Loss — Exchange Link',
+    deck: 'Networking', difficulty: 'advanced', estimated: '30 min',
+    description: 'Network monitoring shows 12% packet loss on the 10 GbE link from the co-location cage to the exchange gateway. FIX order latency has spiked from 45µs to 800µs. Some orders are timing out. The exchange has confirmed their side is healthy — the problem is in our equipment.',
+    objectives: [
+      'Run ping and traceroute to isolate which hop drops packets',
+      'Check interface error counters (ip -s link) for CRC or overrun errors',
+      'Inspect NIC driver logs for ring buffer drops or firmware faults',
+      'Check IRQ affinity / NUMA topology for CPU saturation on the receive path',
+      'Escalate to the co-location provider with a detailed fault report'
+    ]
+  },
+  git: {
+    title: 'Bad Merge in Trading Config Repo',
+    deck: 'Git', difficulty: 'intermediate', estimated: '20 min',
+    description: 'A developer merged a feature branch into main, overwriting the production FIX gateway config. SenderCompID changed from PROD-OMS to TEST-OMS. The push to prod went out 8 minutes ago — orders are now rejected by the exchange.',
+    objectives: [
+      'Use git log and git diff to identify exactly what changed and when',
+      'Create a revert commit restoring the correct production configuration',
+      'Push the revert following your emergency protocol',
+      'Confirm exchange connectivity restores after deploy',
+      'Add a branch protection rule requiring review before merges to main'
+    ]
+  },
+  support: {
+    title: 'Client Reporting Stale NVDA Prices',
+    deck: 'Support Tickets', difficulty: 'beginner', estimated: '15 min',
+    description: 'Priority-1 ticket: Portfolio manager at Meridian Capital reports NVDA bid/ask prices in their OMS have not refreshed since 10:14 AM EST. It is now 10:31 AM. They are trying to execute a 500 K share block and cannot trust the quotes.',
+    objectives: [
+      'Reproduce the issue by checking your internal NVDA quote display',
+      'Trace the data chain: exchange feed → normalizer → distribution → client FIX drop copy',
+      'Identify whether the issue is specific to NVDA, this client\'s feed, or systemic',
+      'Apply or escalate the fix and confirm fresh quotes flow to the client',
+      'Update the ticket with root cause, timeline, and resolution steps'
+    ]
+  },
+  interview: {
+    title: 'Design a Real-Time P&L System',
+    deck: 'Interview Prep', difficulty: 'advanced', estimated: '45 min',
+    description: 'System design interview: Design a real-time profit and loss calculation system for an equity trading desk. Requirements: 1 million trades per day, P&L updated within 500 ms of a fill arriving, 200 concurrent portfolio queries, single data centre failover without data loss.',
+    objectives: [
+      'Define the data model: positions, fills, market prices, P&L',
+      'Design the ingestion path from FIX fill reports to P&L updates',
+      'Choose an appropriate state store (Redis, Kafka Streams, etc.) for real-time positions',
+      'Design the query API for portfolio managers and risk systems',
+      'Address failover, consistency, and end-of-day reconciliation'
+    ]
+  },
+  darkpool: {
+    title: 'ATS TRF Reporting Lag — Compliance Alert',
+    deck: 'Dark Pools', difficulty: 'intermediate', estimated: '25 min',
+    description: 'FINRA surveillance flagged your firm\'s ATS: 340 trades over the past 2 hours were reported to the Trade Reporting Facility with an average latency of 38 seconds — far beyond the 10-second window required by Rule 4552. Compliance needs immediate remediation. Failure to resolve within the hour triggers a mandatory self-report to FINRA.',
+    objectives: [
+      'Check the TRF gateway process status and its outbound queue depth',
+      'Identify the bottleneck: serialization delay, network latency, or queue backup',
+      'Inspect TRF submission logs for rejection codes or retransmission loops',
+      'Fix the issue (restart gateway, clear queue, update endpoint config) and verify latency drops below 10 s',
+      'Draft a compliance incident summary with timeline, root cause, and proof of remediation'
+    ]
+  }
+};
+
+// ── Per-scenario lab instructions (no spoilers) ───────────
+const SCENARIO_LAB = {
+  fix: {
+    first_steps: [
+      'Read the message log: cat ~/trading-support/fix/logs/*.log',
+      'Inspect the sequence number files: ls ~/trading-support/fix/sessions/PROD-OMS-EXCHANGE/',
+      'The error message tells you exactly what the exchange expected — compare that to what the OMS sent'
+    ],
+    tools: []
+  },
+  kafka: {
+    first_steps: [
+      'export PATH=~/trading-support/kafka/bin:$PATH — then check lag: kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group md-normalizer --describe',
+      'Review the consumer config: cat ~/trading-support/kafka/config/consumer.properties',
+      'Watch the lag grow in real time — is it all partitions or just some?'
+    ],
+    tools: ['kafka-consumer-groups.sh']
+  },
+  k8s: {
+    first_steps: [
+      'export PATH=~/trading-support/k8s/bin:$PATH — then: kubectl get pods -n trading-ns',
+      'Pull the crash logs: kubectl logs order-router-7f9d8b-xk2vp -n trading-ns',
+      'Read the ConfigMap the pod depends on: kubectl get configmap order-router-config -n trading-ns -o yaml'
+    ],
+    tools: ['kubectl (simulated)']
+  },
+  marketdata: {
+    first_steps: [
+      'export PATH=~/trading-support/marketdata/bin:$PATH — run: feedcheck',
+      'Note which symbols are fresh and which are stale — is it random or a specific symbol?',
+      'Check the normalizer log: cat ~/trading-support/marketdata/logs/normalizer.log — look for what is missing'
+    ],
+    tools: ['feedcheck']
+  },
+  sql: {
+    first_steps: [
+      'Open the DB: sqlite3 ~/trading-support/sql/trades.db',
+      'Run the slow query with timing: .timer on  then paste slow_query.sql',
+      'Use EXPLAIN QUERY PLAN to see why it\'s slow — check ~/trading-support/sql/explain_hint.txt for guidance'
+    ],
+    tools: []
+  },
+  airflow: {
+    first_steps: [
+      'export PATH=~/trading-support/airflow/bin:$PATH — trigger the DAG: airflow dags trigger settlement_pipeline',
+      'Watch which task fails and read its error output carefully',
+      'Look at the error log: cat ~/trading-support/airflow/logs/settlement_pipeline.log — what path does it try to write to?'
+    ],
+    tools: ['airflow (simulated)']
+  },
+  linux: {
+    first_steps: [
+      'Check overall CPU: top  or  htop',
+      'Filter for the culprit: ps aux --sort=-%cpu | head -10',
+      'Note the process name and PID — then check crontab.txt to understand how it got there'
+    ],
+    tools: []
+  },
+  python: {
+    first_steps: [
+      'Watch memory grow: watch -n5 "cat ~/trading-support/python/metrics.log | tail -3"',
+      'Run the profiler to see what\'s allocating: python3 ~/trading-support/python/leak_profile.py',
+      'Compare the broken and fixed service: diff ~/trading-support/python/service.py ~/trading-support/python/service_fixed.py'
+    ],
+    tools: []
+  },
+  aws: {
+    first_steps: [
+      'export PATH=~/trading-support/aws/bin:$PATH — confirm identity: aws sts get-caller-identity',
+      'Reproduce the error: aws s3 cp ~/trading-support/aws/data/trades_20260505.csv s3://firm-trade-archive/daily/',
+      'Inspect the role policy: aws iam get-role-policy --role-name TradingArchiveRole --policy-name ArchivePolicy'
+    ],
+    tools: ['aws (simulated)']
+  },
+  networking: {
+    first_steps: [
+      'Confirm packet loss: bash ~/trading-support/networking/check-loss.sh',
+      'Check interface error counters: bash ~/trading-support/networking/bin/ifcheck',
+      'Read the latency spike log: cat ~/trading-support/networking/logs/network-monitor.log'
+    ],
+    tools: ['ifcheck', 'ping-exchange', 'check-loss.sh']
+  },
+  git: {
+    first_steps: [
+      'cd ~/trading-support/git/trading-config  then: git log --oneline',
+      'Find exactly what changed in the last commit: git show HEAD -- gateway.cfg',
+      'Read the deploy log to understand the impact: cat ~/trading-support/git/deploy.log'
+    ],
+    tools: []
+  },
+  support: {
+    first_steps: [
+      'export PATH=~/trading-support/support/bin:$PATH — read the ticket: cat ~/trading-support/support/logs/client-ticket.txt',
+      'Monitor all symbols live: quotemon — note which one goes dark and when',
+      'Trace the chain: check publisher output, then normalizer output, then compare — where does NVDA disappear?'
+    ],
+    tools: ['quotemon']
+  },
+  interview: {
+    first_steps: [
+      'Read the requirements: cat ~/trading-support/interview/design/requirements.md',
+      'Open the architecture template and fill in the [?] boxes: nano ~/trading-support/interview/design/architecture.txt',
+      'Implement the class skeletons: nano ~/trading-support/interview/skeleton/pnl_engine.py'
+    ],
+    tools: []
+  },
+  darkpool: {
+    first_steps: [
+      'export PATH=~/trading-support/darkpool/bin:$PATH — check live stats: trf-status',
+      'Read the compliance alert: cat ~/trading-support/darkpool/logs/compliance-alert.txt',
+      'Find the misconfigured value: cat ~/trading-support/darkpool/config/trf-reporter.conf — the comment is a clue'
+    ],
+    tools: ['trf-status']
+  }
+};
+
+// ── Terminal state ────────────────────────────────────────
+let xterm = null;
+let xtermFit = null;
+let xtermWs = null;
+
+function openScenario(id) {
+  const s = SCENARIOS[id];
+  if (!s) return;
+  const cap = s.difficulty.charAt(0).toUpperCase() + s.difficulty.slice(1);
+  document.getElementById('scenario-modal-title').textContent = '🖥  Scenario Lab — ' + s.deck;
+  var lab = SCENARIO_LAB[id] || { first_steps: [], tools: [] };
+  var deployCmd = 'cd ~ && wget -q http://10.0.2.2:8765/scenarios.tar.gz && tar xzf scenarios.tar.gz && find trading-support/scenarios -name "*.sh" -exec chmod +x {} \\; && find trading-support/scenarios/*/bin -type f -exec chmod +x {} \\; 2>/dev/null; echo "Lab ready!"';
+  var setupCmd  = 'bash ~/trading-support/scenarios/' + id + '/setup.sh';
+  var resetCmd  = 'bash ~/trading-support/scenarios/' + id + '/reset.sh';
+  var toolsHtml = lab.tools.length
+    ? '<div class="scenario-step-label">Custom tools unlocked by setup</div><div class="scenario-tools">' +
+        lab.tools.map(function(t){ return '<span class="scenario-tool-tag">' + t + '</span>'; }).join('') +
+      '</div>'
+    : '';
+  document.getElementById('scenario-desc-pane').innerHTML =
+    '<div class="scenario-deck-label">' + s.deck + '</div>' +
+    '<div class="scenario-title">' + s.title + '</div>' +
+    '<div class="scenario-badges">' +
+      '<span class="scenario-badge diff-' + s.difficulty + '">' + cap + '</span>' +
+      '<span class="scenario-badge time-badge">⏱ ' + s.estimated + '</span>' +
+    '</div>' +
+    '<div class="scenario-section-lbl">The Situation</div>' +
+    '<div class="scenario-desc-text">' + s.description + '</div>' +
+    '<div class="scenario-section-lbl">Your Objectives</div>' +
+    '<ul class="scenario-obj-list">' +
+      s.objectives.map(function(o){ return '<li>' + o + '</li>'; }).join('') +
+    '</ul>' +
+    '<div class="scenario-divider"></div>' +
+    '<div class="scenario-section-lbl">How to Begin</div>' +
+    '<div class="scenario-step-label">① Deploy lab to VM — run once in terminal</div>' +
+    '<code class="scenario-cmd">' + deployCmd + '</code>' +
+    '<div class="scenario-step-label">② Break this scenario</div>' +
+    '<code class="scenario-cmd">' + setupCmd + '</code>' +
+    '<div class="scenario-step-label">③ Start investigating</div>' +
+    '<ul class="scenario-obj-list">' +
+      lab.first_steps.map(function(s){ return '<li>' + s + '</li>'; }).join('') +
+    '</ul>' +
+    toolsHtml +
+    '<div class="scenario-step-label">④ Verify your fix</div>' +
+    '<code class="scenario-cmd">bash ~/trading-support/scenarios/' + id + '/verify.sh</code>' +
+    '<div class="scenario-step-label">Reset when done</div>' +
+    '<code class="scenario-cmd">' + resetCmd + '</code>';
+  document.getElementById('scenario-modal').classList.add('open');
+  if (!xterm) initXterm();
+  else { try { xtermFit.fit(); } catch(e) {} }
+}
+
+function closeScenario() {
+  document.getElementById('scenario-modal').classList.remove('open');
+}
+
+function initXterm() {
+  if (typeof Terminal === 'undefined') {
+    document.getElementById('xterm-container').innerHTML =
+      '<div style="padding:20px;font-family:var(--mono);font-size:12px;color:var(--muted)">xterm.js failed to load — check your internet connection and refresh.</div>';
+    return;
+  }
+  xterm = new Terminal({
+    theme: {
+      background: '#0d0d14', foreground: '#e8eaf6', cursor: '#e86b1a',
+      black: '#13131f', brightBlack: '#64748b',
+      green: '#52c87a', brightGreen: '#22c55e',
+      blue: '#80c8ff', brightBlue: '#80c8ff',
+      red: '#f87171', yellow: '#e8c860'
+    },
+    fontSize: 13,
+    fontFamily: "'Consolas', 'IBM Plex Mono', 'Courier New', monospace",
+    cursorBlink: true,
+    scrollback: 2000
+  });
+  xtermFit = new FitAddon.FitAddon();
+  xterm.loadAddon(xtermFit);
+  xterm.open(document.getElementById('xterm-container'));
+  try { xtermFit.fit(); } catch(e) {}
+  xterm.writeln('\x1b[38;5;208m╔══════════════════════════════════════════════╗\x1b[0m');
+  xterm.writeln('\x1b[38;5;208m║    Trading Infrastructure Scenario Lab       ║\x1b[0m');
+  xterm.writeln('\x1b[38;5;208m╚══════════════════════════════════════════════╝\x1b[0m');
+  xterm.writeln('');
+  xterm.writeln('\x1b[90m  Run terminal-server.py, then click Connect.\x1b[0m');
+  xterm.writeln('\x1b[90m  pip install websockets paramiko\x1b[0m');
+  xterm.writeln('\x1b[90m  python trading-support/terminal-server.py\x1b[0m');
+  xterm.writeln('');
+  new ResizeObserver(function(){ try { xtermFit.fit(); } catch(e) {} })
+    .observe(document.getElementById('xterm-container'));
+}
+
+function setTermStatus(cls, txt) {
+  var el = document.getElementById('terminal-status');
+  el.className = 'terminal-status ' + cls;
+  el.textContent = txt;
+}
+
+function connectTerminal() {
+  if (xtermWs && xtermWs.readyState < 2) return;
+  if (!xterm) initXterm();
+  setTermStatus('connecting', '● Connecting…');
+  document.getElementById('connect-btn').disabled = true;
+  var ws = new WebSocket('ws://localhost:7681');
+  xtermWs = ws;
+  ws.binaryType = 'arraybuffer';
+  ws.onopen = function() {
+    setTermStatus('connected', '● Connected');
+    document.getElementById('connect-btn').style.display = 'none';
+    document.getElementById('disconnect-btn').style.display = 'inline-block';
+    xterm.writeln('\x1b[32m[Connected]\x1b[0m');
+    xterm.focus();
+    xterm.onData(function(data) {
+      if (ws.readyState === WebSocket.OPEN) ws.send(data);
+    });
+  };
+  ws.onmessage = function(e) {
+    if (e.data instanceof ArrayBuffer) xterm.write(new Uint8Array(e.data));
+    else xterm.write(e.data);
+  };
+  ws.onerror = function() {
+    xterm.writeln('\x1b[31m[Error — is terminal-server.py running on port 7681?]\x1b[0m');
+    setTermStatus('disconnected', '● Error');
+    document.getElementById('connect-btn').disabled = false;
+  };
+  ws.onclose = function() {
+    setTermStatus('disconnected', '● Disconnected');
+    document.getElementById('connect-btn').style.display = 'inline-block';
+    document.getElementById('connect-btn').disabled = false;
+    document.getElementById('disconnect-btn').style.display = 'none';
+    xterm.writeln('\x1b[33m[Session closed]\x1b[0m');
+  };
+}
+
+function disconnectTerminal() {
+  if (xtermWs) { xtermWs.close(); xtermWs = null; }
+}
 
 init();
 </script>

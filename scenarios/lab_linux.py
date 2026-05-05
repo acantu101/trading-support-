@@ -27,18 +27,18 @@ import time
 import signal
 import shutil
 import socket
-import argparse
 import resource
 import subprocess
-import multiprocessing
 from pathlib import Path
 from datetime import datetime, timedelta
 import random
 from common import (
     GREEN, YELLOW, RED, CYAN, BOLD, RESET, SEP,
     ok, warn, err, info, header, lab_footer,
+    save_pid as _sp, load_pids as _lp, spawn as _spwn,
     kill_pids, kill_strays, remove_lab_dir,
     show_status as _show_status,
+    run_menu,
 )
 
 # ─────────────────────────────────────────────
@@ -388,28 +388,12 @@ def _port_holder(name: str, port: int = 8080):
 
 
 # ══════════════════════════════════════════════
-#  PID FILE HELPERS
+#  PID FILE HELPERS  (thin wrappers over common.py)
 # ══════════════════════════════════════════════
 
-def _save_pid(name: str, pid: int):
-    (DIRS["pids"] / f"{name}.pid").write_text(str(pid))
-
-
-def _load_pids() -> dict:
-    pids = {}
-    for p in DIRS["pids"].glob("*.pid"):
-        try:
-            pids[p.stem] = int(p.read_text().strip())
-        except Exception:
-            pass
-    return pids
-
-
-def _spawn(target, args, pid_name):
-    p = multiprocessing.Process(target=target, args=args, daemon=False)
-    p.start()
-    _save_pid(pid_name, p.pid)
-    return p.pid
+def _save_pid(name: str, pid: int):   _sp(DIRS["pids"], name, pid)
+def _load_pids() -> dict:             return _lp(DIRS["pids"])
+def _spawn(target, args, pid_name):   return _spwn(target, args, DIRS["pids"], pid_name)
 
 
 # ══════════════════════════════════════════════
@@ -868,66 +852,15 @@ SCENARIO_MAP = {
 }
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Support Engineer Challenge Lab Setup",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Scenarios (match HTML challenge lab):
-  1   L-01  Hung oms_client — CPU spike
-  2   L-02  Memory leak in mdf_feed_handler
-  3   L-03  Log file analysis (grep/awk/uniq)
-  4   L-04  Port 8080 already in use
-  5   L-05  Broken file permissions
-  6   L-06  Large files eating disk space
-  7   L-07  Failed systemd service (riskengine)
-  8   L-08  Full one-box performance triage
-  9         Zombie processes from risk_engine
-  10        Runaway log file / disk pressure
-  99        FULL INCIDENT — all faults simultaneously
-"""
-    )
-    parser.add_argument("--scenario", "-s", type=int,
-                        choices=list(SCENARIO_MAP.keys()),
-                        help="Launch a specific scenario")
-    parser.add_argument("--teardown", "-t", action="store_true",
-                        help="Kill all lab processes and remove all lab files")
-    parser.add_argument("--status", action="store_true",
-                        help="Show status of running lab processes")
-    args = parser.parse_args()
-
-    if args.teardown:
-        teardown()
-        return
-
-    if args.status:
-        show_status()
-        return
-
-    # Always build filesystem first
+def _setup():
     create_directory_structure()
     write_base_configs()
 
-    if args.scenario:
-        fn, _ = SCENARIO_MAP[args.scenario]
-        fn()
-    else:
-        header("Support Engineer Challenge Lab")
-        print("  Select a scenario to launch:\n")
-        for num, (_, desc) in SCENARIO_MAP.items():
-            print(f"    {num:<4} {desc}")
-        print()
-        choice = input("  Enter scenario number (or q to quit): ").strip()
-        if choice.lower() == "q":
-            return
-        try:
-            fn, _ = SCENARIO_MAP[int(choice)]
-            fn()
-        except (KeyError, ValueError):
-            err(f"Invalid choice: {choice}")
-            return
 
-    lab_footer("lab_linux.py")
+def main():
+    run_menu(SCENARIO_MAP, "Linux & Systems Challenge Lab",
+             setup_fn=_setup, teardown_fn=teardown, status_fn=show_status,
+             script_name="lab_linux.py")
 
 
 if __name__ == "__main__":

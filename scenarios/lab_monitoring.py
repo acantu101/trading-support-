@@ -37,10 +37,11 @@ from common import (
     create_dirs as _create_dirs,
     remove_lab_dir,
     show_status as _show_status,
+    run_menu,
 )
 
 def create_dirs(): _create_dirs(DIRS)
-def show_status(): _show_status(DIRS["logs"], "Monitoring Lab")
+def show_status(): _show_status(DIRS["scripts"], "Monitoring Lab")
 
 
 # ══════════════════════════════════════════════
@@ -638,28 +639,9 @@ SCENARIO_MAP = {
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Monitoring & Observability Challenge Lab",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="\n".join(f"  {k:<4} {v}" for k, (_, v) in SCENARIO_MAP.items()))
-    parser.add_argument("--scenario", "-s", type=int, choices=list(SCENARIO_MAP.keys()))
-    parser.add_argument("--teardown", "-t", action="store_true")
-    parser.add_argument("--status",         action="store_true")
-    args = parser.parse_args()
-    if args.teardown: teardown(); return
-    if args.status:   show_status(); return
-    create_dirs()
-    if args.scenario:
-        fn, _ = SCENARIO_MAP[args.scenario]; fn()
-    else:
-        header("Monitoring & Observability Challenge Lab")
-        for num, (_, desc) in SCENARIO_MAP.items():
-            print(f"    {num:<4} {desc}")
-        choice = input("\n  Enter scenario number (or q): ").strip()
-        if choice.lower() == "q": return
-        try:
-            fn, _ = SCENARIO_MAP[int(choice)]; fn()
-        except (KeyError, ValueError): err(f"Invalid: {choice}")
-    lab_footer("lab_monitoring.py")
+    run_menu(SCENARIO_MAP, "Monitoring & Observability Challenge Lab",
+             setup_fn=create_dirs, teardown_fn=teardown, status_fn=show_status,
+             script_name="lab_monitoring.py")
 
 
 if __name__ == "__main__":

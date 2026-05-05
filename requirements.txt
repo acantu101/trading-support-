@@ -1,0 +1,11 @@
+# Core — required for all scenarios (Python 3.7+ stdlib only, no install needed)
+# sqlite3, socket, subprocess, multiprocessing, pathlib — all stdlib
+
+# Optional — improves process naming in lab_linux scenarios (ps/top output)
+setproctitle>=1.3
+
+# Optional — enables HDF5 tick-data scenarios in lab_marketdata (MD-09, MD-10)
+h5py>=3.0
+
+# Optional — enables real Kafka producer/consumer scripts in lab_kafka (K-05, K-07)
+kafka-python>=2.0

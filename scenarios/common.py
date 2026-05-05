@@ -7,6 +7,7 @@ import os
 import sys
 import signal
 import shutil
+import argparse
 import subprocess
 import multiprocessing
 from pathlib import Path
@@ -139,7 +140,8 @@ def show_status(pid_dir: Path, label: str = "Lab"):
 #  MENU / ARG-PARSE RUNNER
 # ─────────────────────────────────────────────
 def run_menu(scenario_map: dict, title: str, setup_fn=None,
-             teardown_fn=None, status_fn=None, args=None):
+             teardown_fn=None, status_fn=None, args=None,
+             script_name: str = ""):
     """
     Generic interactive menu runner.
 
@@ -147,10 +149,9 @@ def run_menu(scenario_map: dict, title: str, setup_fn=None,
     setup_fn:     called once before any scenario (e.g. create_dirs)
     teardown_fn:  called when --teardown is passed
     status_fn:    called when --status is passed
-    args:         parsed argparse.Namespace
+    args:         pre-parsed argparse.Namespace (skips parse_args when provided)
+    script_name:  printed in the lab footer after a scenario runs
     """
-    import argparse
-
     if args is None:
         parser = argparse.ArgumentParser(
             description=title,
@@ -178,6 +179,8 @@ def run_menu(scenario_map: dict, title: str, setup_fn=None,
 
     if args.scenario:
         _run_scenario(scenario_map, args.scenario)
+        if script_name:
+            lab_footer(script_name)
     else:
         header(title)
         print("  Select a scenario:\n")
@@ -189,6 +192,8 @@ def run_menu(scenario_map: dict, title: str, setup_fn=None,
             return
         try:
             _run_scenario(scenario_map, int(choice))
+            if script_name:
+                lab_footer(script_name)
         except (KeyError, ValueError):
             err(f"Invalid choice: {choice}")
 

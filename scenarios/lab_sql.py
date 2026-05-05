@@ -37,6 +37,7 @@ from common import (
     GREEN, YELLOW, RED, CYAN, BOLD, RESET, SEP,
     ok, warn, err, header, lab_footer,
     create_dirs as _create_dirs,
+    run_menu,
 )
 SEPARATOR = SEP
 DB_PATH = DIRS["db"] / "trading.db"
@@ -1140,36 +1141,16 @@ SCENARIO_MAP = {
     99: (launch_scenario_99, "      ALL scenarios"),
 }
 
-def main():
-    parser = argparse.ArgumentParser(description="SQL Challenge Lab Setup",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="\n".join(f"  {k:<4} {v}" for k, (_, v) in SCENARIO_MAP.items()))
-    parser.add_argument("--scenario", "-s", type=int, choices=list(SCENARIO_MAP.keys()))
-    parser.add_argument("--teardown", "-t", action="store_true")
-    parser.add_argument("--status",         action="store_true")
-    args = parser.parse_args()
-    if args.teardown: teardown(); return
-    if args.status: show_status(); return
+def _setup():
     create_dirs()
     setup_database()
-    if args.scenario:
-        fn, _ = SCENARIO_MAP[args.scenario]; fn()
-    else:
-        header("SQL Challenge Lab")
-        print(f"  Database: {DB_PATH}\n")
-        for num, (_, desc) in SCENARIO_MAP.items():
-            print(f"    {num:<4} {desc}")
-        choice = input("\n  Enter scenario number (or q): ").strip()
-        if choice.lower() == "q": return
-        try:
-            fn, _ = SCENARIO_MAP[int(choice)]; fn()
-        except (KeyError, ValueError): err(f"Invalid: {choice}")
-    print(f"\n{BOLD}{SEPARATOR}{RESET}")
-    print(f"{GREEN}{BOLD}  Lab is live. Work through the tasks above.{RESET}")
-    print(f"{CYAN}    sqlite3 {DB_PATH}               # connect directly")
-    print(f"    python3 lab_sql.py --status")
-    print(f"    python3 lab_sql.py --teardown{RESET}")
-    print(f"{BOLD}{SEPARATOR}{RESET}\n")
+    print(f"{CYAN}  → Database: sqlite3 {DB_PATH}{RESET}")
+
+
+def main():
+    run_menu(SCENARIO_MAP, "SQL Challenge Lab",
+             setup_fn=_setup, teardown_fn=teardown, status_fn=show_status,
+             script_name="lab_sql.py")
 
 if __name__ == "__main__":
     main()

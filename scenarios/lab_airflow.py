@@ -34,6 +34,7 @@ from common import (
     save_pid as _save_pid, load_pids as _load_pids,
     spawn as _spawn, kill_pids, kill_strays, remove_lab_dir,
     show_status as _show_status,
+    run_menu,
 )
 
 LAB_ROOT = Path("/tmp/lab_airflow")
@@ -1900,43 +1901,9 @@ SCENARIO_MAP = {
 }
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Airflow & Pipelines Challenge Lab",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="\n".join(f"  {k:<4} {v}" for k, (_, v) in SCENARIO_MAP.items()))
-    parser.add_argument("--scenario", "-s", type=int, choices=list(SCENARIO_MAP.keys()))
-    parser.add_argument("--teardown", "-t", action="store_true")
-    parser.add_argument("--status",         action="store_true")
-    args = parser.parse_args()
-
-    if args.teardown: teardown(); return
-    if args.status:   show_status(); return
-
-    create_dirs()
-
-    if args.scenario:
-        if args.scenario == 99:
-            for k, (fn, _) in SCENARIO_MAP.items():
-                if k != 99 and fn: fn()
-        else:
-            fn, _ = SCENARIO_MAP[args.scenario]; fn()
-    else:
-        header("Airflow & Pipelines Challenge Lab")
-        for num, (_, desc) in SCENARIO_MAP.items():
-            print(f"    {num:<4} {desc}")
-        choice = input("\n  Enter scenario number (or q): ").strip()
-        if choice.lower() == "q": return
-        try:
-            num = int(choice)
-            if num == 99:
-                for k, (fn, _) in SCENARIO_MAP.items():
-                    if k != 99 and fn: fn()
-            else:
-                fn, _ = SCENARIO_MAP[num]; fn()
-        except (KeyError, ValueError):
-            print(f"{RED}  Invalid choice{RESET}")
-
-    lab_footer("lab_airflow.py")
+    run_menu(SCENARIO_MAP, "Airflow & Pipelines Challenge Lab",
+             setup_fn=create_dirs, teardown_fn=teardown, status_fn=show_status,
+             script_name="lab_airflow.py")
 
 if __name__ == "__main__":
     main()

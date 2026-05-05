@@ -46,6 +46,7 @@ from common import (
     save_pid as _save_pid, load_pids as _load_pids,
     spawn as _spawn, kill_pids, kill_strays, remove_lab_dir,
     show_status as _show_status,
+    run_menu,
 )
 
 # ══════════════════════════════════════════════
@@ -549,39 +550,9 @@ SCENARIO_MAP = {
 }
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Networking Challenge Lab Setup",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="\n".join(f"  {k:<4} {v}" for k, (_, v) in SCENARIO_MAP.items())
-    )
-    parser.add_argument("--scenario", "-s", type=int, choices=list(SCENARIO_MAP.keys()))
-    parser.add_argument("--teardown", "-t", action="store_true")
-    parser.add_argument("--status",         action="store_true")
-    args = parser.parse_args()
-
-    if args.teardown: teardown(); return
-    if args.status:   show_status(); return
-
-    create_dirs()
-
-    if args.scenario:
-        fn, _ = SCENARIO_MAP[args.scenario]
-        fn()
-    else:
-        header("Networking Challenge Lab")
-        print("  Available scenarios:\n")
-        for num, (_, desc) in SCENARIO_MAP.items():
-            print(f"    {num:<4} {desc}")
-        print()
-        choice = input("  Enter scenario number (or q to quit): ").strip()
-        if choice.lower() == "q": return
-        try:
-            fn, _ = SCENARIO_MAP[int(choice)]
-            fn()
-        except (KeyError, ValueError):
-            err(f"Invalid choice: {choice}"); return
-
-    lab_footer("lab_networking.py")
+    run_menu(SCENARIO_MAP, "Networking Challenge Lab",
+             setup_fn=create_dirs, teardown_fn=teardown, status_fn=show_status,
+             script_name="lab_networking.py")
 
 if __name__ == "__main__":
     main()

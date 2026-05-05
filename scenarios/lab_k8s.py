@@ -27,6 +27,7 @@ from common import (
     GREEN, YELLOW, RED, CYAN, BOLD, RESET, SEP,
     ok, warn, err, info, header, lab_footer,
     create_dirs as _create_dirs, remove_lab_dir,
+    run_menu,
 )
 
 LAB_ROOT = Path("/tmp/lab_k8s")
@@ -1254,43 +1255,9 @@ SCENARIO_MAP = {
 }
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Kubernetes & ArgoCD Challenge Lab",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="\n".join(f"  {k:<4} {v}" for k, (_, v) in SCENARIO_MAP.items()))
-    parser.add_argument("--scenario", "-s", type=int, choices=list(SCENARIO_MAP.keys()))
-    parser.add_argument("--teardown", "-t", action="store_true")
-    parser.add_argument("--status",         action="store_true")
-    args = parser.parse_args()
-
-    if args.teardown: teardown(); return
-    if args.status:   show_status(); return
-
-    create_dirs()
-
-    if args.scenario:
-        if args.scenario == 99:
-            for fn, _ in list(SCENARIO_MAP.values())[:-1]:
-                fn()
-        else:
-            fn, _ = SCENARIO_MAP[args.scenario]; fn()
-    else:
-        header("Kubernetes & ArgoCD Challenge Lab")
-        for num, (_, desc) in SCENARIO_MAP.items():
-            print(f"    {num:<4} {desc}")
-        choice = input("\n  Enter scenario number (or q): ").strip()
-        if choice.lower() == "q": return
-        try:
-            if int(choice) == 99:
-                for fn, _ in list(SCENARIO_MAP.values())[:-1]: fn()
-            else:
-                fn, _ = SCENARIO_MAP[int(choice)]; fn()
-        except (KeyError, ValueError):
-            print(f"{RED}  Invalid choice{RESET}")
-
-    print(f"\n{BOLD}{SEP}{RESET}\n{GREEN}{BOLD}  Lab is live.{RESET}\n"
-          f"{CYAN}    python3 lab_k8s.py --status\n"
-          f"    python3 lab_k8s.py --teardown{RESET}\n{BOLD}{SEP}{RESET}\n")
+    run_menu(SCENARIO_MAP, "Kubernetes & ArgoCD Challenge Lab",
+             setup_fn=create_dirs, teardown_fn=teardown, status_fn=show_status,
+             script_name="lab_k8s.py")
 
 if __name__ == "__main__":
     main()

@@ -36,6 +36,7 @@ CATEGORIES = {
     "java":       ("lab_java",        "J   Java / JVM"),
     "marketdata": ("lab_marketdata",  "MD  Market Data & Protocols"),
     "monitoring": ("lab_monitoring",  "M   Monitoring & Observability"),
+    "incident":   ("lab_incident",    "TI  Trading Incident (DRW-style cascade)"),
 }
 
 CATEGORY_KEYS = list(CATEGORIES.keys())
@@ -57,13 +58,17 @@ def run_category(key: str):
     if mod is None:
         return
 
-    # All lab modules expose SCENARIO_MAP and main(); use run_menu if available
-    if hasattr(mod, "run_menu"):
-        mod.run_menu(mod.SCENARIO_MAP, label)
-    elif hasattr(mod, "main"):
-        mod.main()
-    else:
-        err(f"{module_name} has no main() or run_menu()")
+    # Sub-lab main() calls parse_args() on sys.argv. Strip the top-level
+    # --category arg so the sub-lab's argparse doesn't see unknown flags.
+    saved_argv = sys.argv[:]
+    sys.argv = [sys.argv[0]]
+    try:
+        if hasattr(mod, "main"):
+            mod.main()
+        else:
+            err(f"{module_name} has no main()")
+    finally:
+        sys.argv = saved_argv
 
 
 def teardown_all():
