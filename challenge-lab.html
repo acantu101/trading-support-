@@ -6284,7 +6284,7 @@ function openScenario(id) {
   const cap = s.difficulty.charAt(0).toUpperCase() + s.difficulty.slice(1);
   document.getElementById('scenario-modal-title').textContent = '🖥  Scenario Lab — ' + s.deck;
   var lab = SCENARIO_LAB[id] || { first_steps: [], tools: [] };
-  var deployCmd = 'cd ~ && wget -q http://10.0.2.2:8765/scenarios.tar.gz && tar xzf scenarios.tar.gz && find trading-support/scenarios -name "*.sh" -exec chmod +x {} \\; && find trading-support/scenarios/*/bin -type f -exec chmod +x {} \\; 2>/dev/null; echo "Lab ready!"';
+  var deployCmd = 'cd ~ && wget -q http://10.0.2.2:8765/scenarios.tar.gz && mkdir -p $HOME/trading-support && tar xzf scenarios.tar.gz -C $HOME/trading-support/ && find $HOME/trading-support/scenarios -name "*.sh" -exec chmod +x {} \\; && find $HOME/trading-support/scenarios/*/bin -type f -exec chmod +x {} \\; 2>/dev/null; echo "Lab ready!"';
   var setupCmd  = 'bash ~/trading-support/scenarios/' + id + '/setup.sh';
   var resetCmd  = 'bash ~/trading-support/scenarios/' + id + '/reset.sh';
   var toolsHtml = lab.tools.length
