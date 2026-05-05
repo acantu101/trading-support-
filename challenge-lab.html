@@ -6173,7 +6173,8 @@ const SCENARIO_LAB = {
       'Review the consumer config: cat ~/trading-support/kafka/config/consumer.properties',
       'Watch the lag grow in real time — is it all partitions or just some?'
     ],
-    tools: ['kafka-consumer-groups.sh']
+    tools: ['kafka-consumer-groups.sh'],
+    hint: 'The problem is in a config value that controls how much work the consumer does per polling cycle. Think about the math: if the consumer polls once per second, what value do you need to keep pace with the producer\'s write rate?'
   },
   k8s: {
     first_steps: [
@@ -6292,6 +6293,14 @@ function openScenario(id) {
         lab.tools.map(function(t){ return '<span class="scenario-tool-tag">' + t + '</span>'; }).join('') +
       '</div>'
     : '';
+  var hintHtml = lab.hint
+    ? '<button class="scenario-hint-toggle" onclick="toggleScenarioHint(this)">' +
+        '<span class="hint-arrow">▶</span> Need a nudge?' +
+      '</button>' +
+      '<div class="scenario-hint-panel">' +
+        '<div class="scenario-desc-text">' + lab.hint + '</div>' +
+      '</div>'
+    : '';
   document.getElementById('scenario-desc-pane').innerHTML =
     '<div class="scenario-deck-label">' + s.deck + '</div>' +
     '<div class="scenario-title">' + s.title + '</div>' +
@@ -6299,6 +6308,12 @@ function openScenario(id) {
       '<span class="scenario-badge diff-' + s.difficulty + '">' + cap + '</span>' +
       '<span class="scenario-badge time-badge">⏱ ' + s.estimated + '</span>' +
     '</div>' +
+    '<div class="scenario-section-lbl">The Situation</div>' +
+    '<div class="scenario-desc-text">' + s.description + '</div>' +
+    '<div class="scenario-section-lbl">Your Objectives</div>' +
+    '<ul class="scenario-obj-list">' +
+      s.objectives.map(function(o){ return '<li>' + o + '</li>'; }).join('') +
+    '</ul>' +
     '<div class="scenario-section-lbl">How to Begin</div>' +
     '<div class="scenario-step-label">① Deploy lab to VM — run once in terminal</div>' +
     '<code class="scenario-cmd">' + deployCmd + '</code>' +
@@ -6313,17 +6328,7 @@ function openScenario(id) {
     '<code class="scenario-cmd">bash ~/trading-support/scenarios/' + id + '/verify.sh</code>' +
     '<div class="scenario-step-label">Reset when done</div>' +
     '<code class="scenario-cmd">' + resetCmd + '</code>' +
-    '<button class="scenario-hint-toggle" onclick="toggleScenarioHint(this)">' +
-      '<span class="hint-arrow">▶</span> Situation &amp; Objectives' +
-    '</button>' +
-    '<div class="scenario-hint-panel">' +
-      '<div class="scenario-section-lbl">The Situation</div>' +
-      '<div class="scenario-desc-text">' + s.description + '</div>' +
-      '<div class="scenario-section-lbl">Your Objectives</div>' +
-      '<ul class="scenario-obj-list">' +
-        s.objectives.map(function(o){ return '<li>' + o + '</li>'; }).join('') +
-      '</ul>' +
-    '</div>';
+    hintHtml;
   document.getElementById('scenario-modal').classList.add('open');
   if (!xterm) initXterm();
   else { try { xtermFit.fit(); } catch(e) {} }

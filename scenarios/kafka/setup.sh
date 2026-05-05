@@ -19,7 +19,7 @@ python3 -m pip install --quiet --user kafka-python 2>/dev/null || true
 ok "Dep check done (simulation mode does not require real Kafka)"
 
 # ── consumer.properties (the bottleneck config) ──────────────────────────────
-step "Writing consumer.properties (max.poll.records=10 — bottleneck)..."
+step "Writing consumer.properties..."
 cat > "$KAFKA_DIR/config/consumer.properties" << 'EOF'
 # Kafka consumer config — md-normalizer group
 bootstrap.servers=localhost:9092
@@ -28,7 +28,6 @@ auto.offset.reset=earliest
 enable.auto.commit=true
 auto.commit.interval.ms=1000
 
-# BOTTLENECK: too low — should be 500 for this throughput
 max.poll.records=10
 
 fetch.min.bytes=1
