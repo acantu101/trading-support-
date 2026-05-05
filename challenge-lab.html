@@ -36,14 +36,14 @@
   header {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 14px 28px;
+    padding: 8px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     position: sticky;
     top: 0;
     z-index: 100;
-    height: 52px;
+    height: 44px;
   }
 
   .logo {
@@ -66,14 +66,14 @@
   .layout {
     display: grid;
     grid-template-columns: 210px 1fr;
-    height: calc(100vh - 52px);
+    height: calc(100vh - 44px);
   }
 
   /* ── Sidebar ── */
   aside {
     background: var(--surface);
     border-right: 1px solid var(--border);
-    padding: 18px 0;
+    padding: 10px 0;
     overflow-y: auto;
     height: 100%;
   }
@@ -139,7 +139,7 @@
   .deck-bar {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 10px 28px;
+    padding: 6px 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -192,7 +192,7 @@
     display: none;
     height: 100%;
     overflow-y: auto;
-    padding: 30px 36px 20px;
+    padding: 16px 28px 12px;
   }
   .slide.active { display: block; }
 
@@ -419,7 +419,7 @@
   /* ── Slide nav footer ── */
   .slide-nav {
     border-top: 1px solid var(--border);
-    padding: 12px 28px;
+    padding: 7px 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -457,6 +457,40 @@
   .dot:hover { background: var(--muted); }
   .dot.active { background: var(--accent); width: 18px; border-radius: 3px; }
 
+  /* Zoom control */
+  .zoom-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 12px;
+  }
+  .zoom-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: all 0.12s;
+    padding: 0;
+  }
+  .zoom-btn:hover { background: rgba(232,107,26,0.18); border-color: var(--accent); color: var(--accent); }
+  #zoom-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    min-width: 30px;
+    text-align: center;
+    user-select: none;
+  }
+
   /* Download button */
   .dl-btn {
     background: rgba(232,107,26,0.14);
@@ -483,6 +517,11 @@
   <div class="header-right">
     Application Support Engineer prep &nbsp;·&nbsp; <strong>HFT</strong> &nbsp;·&nbsp;
     AWS · Java · Python · Kafka · K8s · Argo · HDF5
+    <div class="zoom-ctrl">
+      <button class="zoom-btn" onclick="adjZoom(-1)" title="Zoom out">−</button>
+      <span id="zoom-label">85%</span>
+      <button class="zoom-btn" onclick="adjZoom(+1)" title="Zoom in">+</button>
+    </div>
     <button class="dl-btn" id="dl-btn" onclick="downloadZip()">⬇ Download</button>
   </div>
 </header>
@@ -2674,165 +2713,341 @@ cursor.<span class="fn">execute</span>(<span class="str">"""
           <span class="deck-icon">🐍</span>
           <div>
             <div class="deck-label">Python &amp; Bash</div>
-            <div class="deck-desc">pandas, h5py, Kafka consumer pattern, Bash scripting, debugging tools</div>
+            <div class="deck-desc">Log monitoring, awk parsing, process watchdog, REST, FIX protocol, Kafka lag, OOP patterns</div>
           </div>
         </div>
         <div class="deck-meta">
           <div class="kbd-hint"><kbd>←</kbd><kbd>→</kbd> navigate</div>
-          <div class="deck-counter" id="ctr-python"><strong>1</strong> / 5</div>
+          <div class="deck-counter" id="ctr-python"><strong>1</strong> / 8</div>
         </div>
       </div>
       <div class="slides-wrap" id="slides-python">
 
-        <!-- ── PY1 ── -->
+        <!-- ── PY1: P-01 Log Monitor Bash Script ── -->
         <div class="slide active">
-          <div class="sl-num">PYTHON & BASH · SLIDE 1 / 5</div>
-          <div class="sl-title">Data Processing Essentials</div>
-          <div class="sl-sub">pandas, datetime, and pathlib — the core toolkit for tick data support scripts</div>
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 1 / 8</div>
+          <div class="sl-title">P-01 — Log Monitor Bash Script</div>
+          <div class="sl-sub">Tail a live log, detect error patterns, alert on rate — the daily on-call toolkit</div>
           <div class="sl-rule"></div>
-          <pre><span class="kw">import</span> json, csv
+          <pre><span class="str">#!/usr/bin/env bash</span>
+<span class="kw">set</span> -euo pipefail
+
+LOG_FILE=<span class="str">"/var/log/oms/oms-gateway.log"</span>
+ALERT_LOG=<span class="str">"/tmp/oms_alerts.log"</span>
+THRESHOLD=<span class="nm">10</span>   <span class="cm"># errors/min before paging</span>
+
+<span class="fn">alert</span>() { echo <span class="str">"[$(date -Is)] ALERT: $*"</span> | <span class="fn">tee</span> -a <span class="str">"$ALERT_LOG"</span>; }
+
+<span class="cm"># Tail live and react to named patterns</span>
+<span class="fn">tail</span> -n0 -F <span class="str">"$LOG_FILE"</span> | <span class="kw">while</span> <span class="fn">read</span> -r line; <span class="kw">do</span>
+    <span class="kw">case</span> <span class="str">"$line"</span> <span class="kw">in</span>
+        *REJECT*)   <span class="fn">alert</span> <span class="str">"Order rejected: $line"</span>   ;;
+        *SEQRESET*) <span class="fn">alert</span> <span class="str">"FIX SeqNum reset detected"</span> ;;
+        *OOMKill*)  <span class="fn">alert</span> <span class="str">"Pod OOM: $line"</span>            ;;
+    <span class="kw">esac</span>
+<span class="kw">done</span> &
+
+<span class="cm"># Count ERRORs in the last 60 s; page if rate exceeded</span>
+recent_errors() {
+    <span class="kw">local</span> cutoff; cutoff=$(date -d <span class="str">'1 minute ago'</span> +%s)
+    <span class="fn">awk</span> -v t=<span class="str">"$cutoff"</span> <span class="str">'
+        /ERROR/ { cmd="date -d \""$1" "$2"\" +%s"; cmd | getline ts; close(cmd)
+                  if (ts >= t) count++ }
+        END     { print count+0 }'</span> <span class="str">"$LOG_FILE"</span>
+}
+
+<span class="kw">while</span> <span class="kw">true</span>; <span class="kw">do</span>
+    errs=$(<span class="fn">recent_errors</span>)
+    [[ <span class="str">"$errs"</span> -gt <span class="str">"$THRESHOLD"</span> ]] && <span class="fn">alert</span> <span class="str">"$errs errors/min — threshold $THRESHOLD"</span>
+    <span class="fn">sleep</span> <span class="nm">60</span>
+<span class="kw">done</span></pre>
+          <div class="tip"><strong>P-01 scenario:</strong> The lab injects ERROR lines into a live log at a rising rate. Run this script, trigger the scenario — confirm your alert fires within 60 s.</div>
+        </div>
+
+        <!-- ── PY2: P-02 awk Log Parsing ── -->
+        <div class="slide">
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 2 / 8</div>
+          <div class="sl-title">P-02 — awk Log Parsing</div>
+          <div class="sl-sub">Extract, aggregate, and report from structured logs — single-pass, no Python overhead</div>
+          <div class="sl-rule"></div>
+          <pre><span class="cm"># Count REJECTs per symbol — log line:</span>
+<span class="cm"># 2026-05-04 14:32:11 REJECT symbol=NVTK reason=NO_REF_PRICE</span>
+<span class="fn">awk</span> <span class="str">'/REJECT/ {
+    match($0, /symbol=([A-Z]+)/, arr)
+    counts[arr[1]]++
+}
+END {
+    for (sym in counts)
+        printf "%-8s %d rejects\n", sym, counts[sym]
+}'</span> /var/log/oms/oms-gateway.log | <span class="fn">sort</span> -k2 -rn
+
+<span class="cm"># Latency percentiles from a file with one ms value per line</span>
+<span class="fn">awk</span> <span class="str">'{a[NR]=$1}
+END {
+    n=NR; asort(a)
+    printf "p50=%s  p95=%s  p99=%s\n",
+        a[int(n*0.50)], a[int(n*0.95)], a[int(n*0.99)]
+}'</span> latency.log
+
+<span class="cm"># Flag partitions with lag > 1 000 from a JSON snapshot</span>
+<span class="fn">jq</span> -r <span class="str">'.[] | "\(.topic) \(.partition) lag=\(.current_lag)"'</span> \
+    consumer_lag.json | <span class="fn">awk</span> <span class="str">'$3 > "lag=1000"'</span>
+
+<span class="cm"># Sum fill volume by trader, render as aligned table</span>
+<span class="fn">awk</span> -F<span class="str">','</span> <span class="str">'NR>1 {vol[$3]+=$5}
+END { for (t in vol) print t, vol[t] }'</span> fills.csv | <span class="fn">column</span> -t</pre>
+          <div class="note"><strong>awk vs Python:</strong> awk for single-pass text extraction on large files (no startup cost). Use Python when you need data structures, JSON output, or multi-step transformations.</div>
+        </div>
+
+        <!-- ── PY3: P-03 Python Process Watchdog ── -->
+        <div class="slide">
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 3 / 8</div>
+          <div class="sl-title">P-03 — Python Process Watchdog</div>
+          <div class="sl-sub">Probe a critical process via its PID file and restart it before the trading desk notices</div>
+          <div class="sl-rule"></div>
+          <pre><span class="kw">import</span> subprocess, time, logging, os
 <span class="kw">from</span> pathlib <span class="kw">import</span> Path
-<span class="kw">from</span> datetime <span class="kw">import</span> datetime, date
-<span class="kw">import</span> pandas <span class="kw">as</span> pd
 
-<span class="cm"># Read tick CSV and filter to a window</span>
-df = pd.<span class="fn">read_csv</span>(<span class="str">'ticks.csv'</span>, parse_dates=[<span class="str">'ts'</span>])
-df = df[df[<span class="str">'symbol'</span>] == <span class="str">'AAPL'</span>]
-df = df[(df[<span class="str">'ts'</span>] >= <span class="str">'2024-01-15 14:30'</span>) & (df[<span class="str">'ts'</span>] < <span class="str">'2024-01-15 15:00'</span>)]
+log = logging.<span class="fn">getLogger</span>(__name__)
+logging.<span class="fn">basicConfig</span>(level=logging.INFO,
+    format=<span class="str">'%(asctime)s %(levelname)s %(message)s'</span>)
 
-<span class="cm"># Summary stats per symbol</span>
-df.<span class="fn">groupby</span>(<span class="str">'symbol'</span>)[<span class="str">'price'</span>].<span class="fn">agg</span>([<span class="str">'min'</span>, <span class="str">'max'</span>, <span class="str">'mean'</span>, <span class="str">'count'</span>])
+PID_FILE     = Path(<span class="str">'/var/run/oms-gateway.pid'</span>)
+CMD          = [<span class="str">'/opt/oms/bin/gateway'</span>, <span class="str">'--config'</span>, <span class="str">'/etc/oms/gateway.yml'</span>]
+MAX_RESTARTS = <span class="nm">5</span>
 
-<span class="cm"># VWAP in pandas</span>
-vwap = (df[<span class="str">'price'</span>] * df[<span class="str">'volume'</span>]).<span class="fn">sum</span>() / df[<span class="str">'volume'</span>].<span class="fn">sum</span>()
+<span class="kw">def</span> <span class="fn">is_running</span>(pid: int) -> bool:
+    <span class="kw">try</span>:
+        os.<span class="fn">kill</span>(pid, <span class="nm">0</span>)   <span class="cm"># signal 0 = probe only, does not kill</span>
+        <span class="kw">return</span> <span class="kw">True</span>
+    <span class="kw">except</span> (ProcessLookupError, PermissionError):
+        <span class="kw">return</span> <span class="kw">False</span>
 
-<span class="cm"># Parse a timestamp string</span>
-ts = datetime.<span class="fn">fromisoformat</span>(<span class="str">'2024-01-15T14:30:00'</span>)
+<span class="kw">def</span> <span class="fn">start_process</span>() -> int:
+    proc = subprocess.<span class="fn">Popen</span>(CMD)
+    PID_FILE.<span class="fn">write_text</span>(<span class="fn">str</span>(proc.pid))
+    log.<span class="fn">info</span>(<span class="str">"Started gateway PID %d"</span>, proc.pid)
+    <span class="kw">return</span> proc.pid
 
-<span class="cm"># Walk files in a directory</span>
-<span class="kw">for</span> f <span class="kw">in</span> Path(<span class="str">'/data/ticks'</span>).<span class="fn">glob</span>(<span class="str">'*.h5'</span>):
-    <span class="fn">print</span>(f.name, f.<span class="fn">stat</span>().st_size)</pre>
+restarts = <span class="nm">0</span>
+<span class="kw">while</span> restarts < MAX_RESTARTS:
+    pid = <span class="fn">int</span>(PID_FILE.<span class="fn">read_text</span>()) <span class="kw">if</span> PID_FILE.<span class="fn">exists</span>() <span class="kw">else</span> <span class="nm">0</span>
+    <span class="kw">if</span> <span class="kw">not</span> <span class="fn">is_running</span>(pid):
+        log.<span class="fn">warning</span>(<span class="str">"Gateway down — restarting (attempt %d/%d)"</span>,
+                    restarts + <span class="nm">1</span>, MAX_RESTARTS)
+        pid = <span class="fn">start_process</span>()
+        restarts += <span class="nm">1</span>
+    time.<span class="fn">sleep</span>(<span class="nm">10</span>)</pre>
+          <div class="warn"><strong>Cap restarts.</strong> Without <code>MAX_RESTARTS</code> a misconfigured binary crashes immediately and the watchdog burns CPU in a tight loop. After N failures, page a human instead.</div>
         </div>
 
-        <!-- ── PY2 ── -->
+        <!-- ── PY4: P-04 REST API Client ── -->
         <div class="slide">
-          <div class="sl-num">PYTHON & BASH · SLIDE 2 / 5</div>
-          <div class="sl-title">HDF5 with h5py</div>
-          <div class="sl-sub">Reading and writing tick data files — the storage format researchers use daily</div>
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 4 / 8</div>
+          <div class="sl-title">P-04 — REST API Client</div>
+          <div class="sl-sub">Query internal risk / PnL APIs, handle retries, and surface data-quality issues programmatically</div>
           <div class="sl-rule"></div>
-          <pre><span class="kw">import</span> h5py
-<span class="kw">import</span> numpy <span class="kw">as</span> np
-
-<span class="cm"># Read — inspect what's in the file</span>
-<span class="kw">with</span> h5py.<span class="fn">File</span>(<span class="str">'market_data_2024-01-15.h5'</span>, <span class="str">'r'</span>) <span class="kw">as</span> f:
-    <span class="fn">print</span>(<span class="fn">list</span>(f.keys()))               <span class="cm"># ['AAPL', 'GOOGL', 'NVDA']</span>
-    price  = f[<span class="str">'/AAPL/price'</span>][:]        <span class="cm"># load as numpy array</span>
-    volume = f[<span class="str">'/AAPL/volume'</span>][:]
-    <span class="fn">print</span>(f[<span class="str">'/AAPL/price'</span>].shape)        <span class="cm"># (23847,) — check vs expected</span>
-
-<span class="cm"># Write (append mode 'a' — create or open existing)</span>
-<span class="kw">with</span> h5py.<span class="fn">File</span>(<span class="str">'market_data_2024-01-15.h5'</span>, <span class="str">'a'</span>) <span class="kw">as</span> f:
-    grp = f.<span class="fn">require_group</span>(<span class="str">'NVDA'</span>)
-    grp.<span class="fn">create_dataset</span>(<span class="str">'price'</span>,  data=price_arr,  dtype=<span class="str">'f8'</span>)
-    grp.<span class="fn">create_dataset</span>(<span class="str">'volume'</span>, data=volume_arr, dtype=<span class="str">'i8'</span>)
-
-<span class="cm"># CLI inspection (no Python needed)</span>
-<span class="cm"># h5ls -r market_data.h5          → list all datasets + shapes</span>
-<span class="cm"># h5dump -d /AAPL/price file.h5   → dump a specific dataset</span></pre>
-          <div class="tip"><strong>Support check:</strong> If a researcher says data cuts off mid-day, compare <code>f['/AAPL/price'].shape[0]</code> to the expected tick count for that symbol on that date. Shape mismatch = partial write from an OOMKilled pod.</div>
-        </div>
-
-        <!-- ── PY3 ── -->
-        <div class="slide">
-          <div class="sl-num">PYTHON & BASH · SLIDE 3 / 5</div>
-          <div class="sl-title">Kafka Consumer Pattern</div>
-          <div class="sl-sub">The correct way to consume tick data from Kafka — commit after write, never before</div>
-          <div class="sl-rule"></div>
-          <pre><span class="kw">from</span> kafka <span class="kw">import</span> KafkaConsumer
-<span class="kw">import</span> json, logging
+          <pre><span class="kw">import</span> requests, time, logging
+<span class="kw">from</span> typing <span class="kw">import</span> Any
 
 log = logging.<span class="fn">getLogger</span>(__name__)
 
-consumer = KafkaConsumer(
-    <span class="str">'market-data'</span>,
-    bootstrap_servers=[<span class="str">'broker:9092'</span>],
-    group_id=<span class="str">'tick-storage-group'</span>,
-    auto_offset_reset=<span class="str">'earliest'</span>,     <span class="cm"># replay from start on new group</span>
-    enable_auto_commit=<span class="kw">False</span>,          <span class="cm"># NEVER auto-commit</span>
-    max_poll_records=<span class="nm">500</span>,              <span class="cm"># limit batch size</span>
-    value_deserializer=<span class="kw">lambda</span> m: json.<span class="fn">loads</span>(m.<span class="fn">decode</span>(<span class="str">'utf-8'</span>))
-)
+<span class="kw">def</span> <span class="fn">get_with_retry</span>(url: str, retries: int = <span class="nm">3</span>, backoff: float = <span class="nm">2.0</span>) -> Any:
+    <span class="kw">for</span> attempt <span class="kw">in</span> <span class="fn">range</span>(retries):
+        <span class="kw">try</span>:
+            r = requests.<span class="fn">get</span>(url, timeout=<span class="nm">5</span>)
+            r.<span class="fn">raise_for_status</span>()      <span class="cm"># raise on 4xx / 5xx</span>
+            <span class="kw">return</span> r.<span class="fn">json</span>()
+        <span class="kw">except</span> requests.exceptions.Timeout:
+            log.<span class="fn">warning</span>(<span class="str">"Timeout attempt %d/%d"</span>, attempt + <span class="nm">1</span>, retries)
+        <span class="kw">except</span> requests.exceptions.HTTPError <span class="kw">as</span> e:
+            log.<span class="fn">error</span>(<span class="str">"HTTP %s: %s"</span>, e.response.status_code, url)
+            <span class="kw">raise</span>               <span class="cm"># 4xx: do not retry</span>
+        time.<span class="fn">sleep</span>(backoff ** attempt)
+    <span class="kw">raise</span> RuntimeError(<span class="str">f"Failed after {retries} attempts: {url}"</span>)
 
-<span class="kw">for</span> message <span class="kw">in</span> consumer:
-    <span class="kw">try</span>:
-        tick = message.value
-        <span class="fn">write_to_hdf5</span>(tick)             <span class="cm"># write FIRST</span>
-        consumer.<span class="fn">commit</span>()              <span class="cm"># commit AFTER successful write</span>
-    <span class="kw">except</span> Exception <span class="kw">as</span> e:
-        log.<span class="fn">error</span>(<span class="str">"Write failed: %s"</span>, e)
-        <span class="kw">raise</span>                           <span class="cm"># let it crash — don't silently skip</span></pre>
-          <div class="warn"><strong>Never swallow exceptions silently.</strong> If <code>write_to_hdf5</code> fails and you commit anyway, that tick is gone. Let it crash — the pod restarts, Kafka replays from the last committed offset.</div>
+<span class="cm"># Fetch positions and check for data-quality issues</span>
+positions = <span class="fn">get_with_retry</span>(
+    <span class="str">"http://risk-api:8080/v1/positions?date=2026-05-04"</span>)
+
+<span class="kw">for</span> p <span class="kw">in</span> positions[<span class="str">"data"</span>]:
+    <span class="kw">if</span> p[<span class="str">"ref_price"</span>] <span class="kw">is</span> <span class="kw">None</span>:
+        log.<span class="fn">error</span>(
+            <span class="str">"NULL ref_price for %s — IPO symbol missing from static data?"</span>,
+            p[<span class="str">"symbol"</span>])
+    <span class="kw">if</span> p[<span class="str">"last_update"</span>] < <span class="str">"2026-05-04"</span>:
+        log.<span class="fn">warning</span>(<span class="str">"Stale position for %s (updated %s)"</span>,
+                    p[<span class="str">"symbol"</span>], p[<span class="str">"last_update"</span>])</pre>
+          <div class="tip"><strong>P-04 scenario:</strong> The lab runs a mock Flask API that returns a stale date and <code>null</code> ref_price for IPO symbols. Your script must detect and log both conditions before marking the task complete.</div>
         </div>
 
-        <!-- ── PY4 ── -->
+        <!-- ── PY5: P-05 FIX Message Parser ── -->
         <div class="slide">
-          <div class="sl-num">PYTHON & BASH · SLIDE 4 / 5</div>
-          <div class="sl-title">Bash Scripting Patterns</div>
-          <div class="sl-sub">Writing reliable support scripts — the three settings that matter most</div>
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 5 / 8</div>
+          <div class="sl-title">P-05 — FIX Message Parser</div>
+          <div class="sl-sub">Decode FIX 4.4 fields, detect SeqNum gaps, and identify ResendRequest / GapFill flows</div>
           <div class="sl-rule"></div>
-          <pre><span class="str">#!/usr/bin/env bash</span>
-<span class="kw">set</span> -euo pipefail   <span class="cm"># -e: exit on error  -u: unset var = error  -o pipefail: pipe failures caught</span>
+          <pre><span class="kw">from</span> typing <span class="kw">import</span> Iterator
 
-LOG=/var/log/support-triage.log
-<span class="fn">log</span>() { echo <span class="str">"[$(date -Is)] $*"</span> | tee -a <span class="str">"$LOG"</span>; }
+SOH = <span class="str">'\x01'</span>   <span class="cm"># FIX field delimiter</span>
 
-<span class="cm"># Test connectivity before doing anything</span>
-<span class="fn">check_port</span>() {
-    local host=<span class="str">"$1"</span> port=<span class="str">"$2"</span>
-    nc -zv -w3 <span class="str">"$host"</span> <span class="str">"$port"</span> 2>/dev/null \
-        && <span class="fn">log</span> <span class="str">"OK: $host:$port"</span> \
-        || { <span class="fn">log</span> <span class="str">"FAIL: $host:$port unreachable"</span>; exit 1; }
-}
+TAGS = {<span class="str">'8'</span>: <span class="str">'BeginString'</span>, <span class="str">'35'</span>: <span class="str">'MsgType'</span>,  <span class="str">'34'</span>: <span class="str">'MsgSeqNum'</span>,
+        <span class="str">'49'</span>: <span class="str">'SenderCompID'</span>,              <span class="str">'56'</span>: <span class="str">'TargetCompID'</span>,
+        <span class="str">'7'</span>:  <span class="str">'BeginSeqNo'</span>,  <span class="str">'16'</span>: <span class="str">'EndSeqNo'</span>,
+        <span class="str">'36'</span>: <span class="str">'NewSeqNo'</span>,   <span class="str">'43'</span>: <span class="str">'PossDupFlag'</span>}
+MSG_TYPES = {<span class="str">'D'</span>: <span class="str">'NewOrderSingle'</span>, <span class="str">'8'</span>: <span class="str">'ExecutionReport'</span>,
+             <span class="str">'2'</span>: <span class="str">'ResendRequest'</span>,   <span class="str">'4'</span>: <span class="str">'SequenceReset'</span>}
 
-<span class="cm"># Process a CSV of symbols to check</span>
-<span class="kw">while</span> IFS=<span class="str">','</span> read -r symbol date; do
-    <span class="fn">log</span> <span class="str">"Checking $symbol $date"</span>
-    python check_ticks.py --symbol <span class="str">"$symbol"</span> --date <span class="str">"$date"</span>
-<span class="kw">done</span> < symbols.csv
+<span class="kw">def</span> <span class="fn">parse_fix</span>(raw: str) -> dict:
+    <span class="kw">return</span> {k: v <span class="kw">for</span> part <span class="kw">in</span> raw.<span class="fn">split</span>(SOH) <span class="kw">if</span> <span class="str">'='</span> <span class="kw">in</span> part
+            <span class="kw">for</span> k, v <span class="kw">in</span> [part.<span class="fn">split</span>(<span class="str">'='</span>, <span class="nm">1</span>)]}
 
-<span class="cm"># Quote variables always — spaces in paths cause split bugs</span>
-<span class="cm"># file="my data.h5"; cat $file  ← WRONG (splits on space)</span>
-<span class="cm"># file="my data.h5"; cat "$file" ← RIGHT</span></pre>
+<span class="kw">def</span> <span class="fn">check_gaps</span>(log_path: str) -> Iterator[tuple]:
+    expected = <span class="nm">1</span>
+    <span class="kw">with</span> <span class="fn">open</span>(log_path) <span class="kw">as</span> fh:
+        <span class="kw">for</span> line <span class="kw">in</span> fh:
+            fields = <span class="fn">parse_fix</span>(line.<span class="fn">strip</span>())
+            seq = <span class="fn">int</span>(fields.<span class="fn">get</span>(<span class="str">'34'</span>, <span class="nm">0</span>))
+            mt  = MSG_TYPES.<span class="fn">get</span>(fields.<span class="fn">get</span>(<span class="str">'35'</span>, <span class="str">''</span>), <span class="str">'Unknown'</span>)
+            <span class="kw">if</span> seq > <span class="nm">0</span> <span class="kw">and</span> seq != expected:
+                <span class="kw">yield</span> (expected, seq, mt)   <span class="cm"># (expected, got, msgtype)</span>
+            <span class="kw">if</span> seq > <span class="nm">0</span>:
+                expected = seq + <span class="nm">1</span>
+
+<span class="kw">for</span> exp, got, mt <span class="kw">in</span> <span class="fn">check_gaps</span>(<span class="str">'/fix/logs/FIX.4.4-OMS-EXCHANGE_A.log'</span>):
+    <span class="fn">print</span>(<span class="str">f"GAP expected={exp} got={got} ({mt})"</span>)</pre>
+          <div class="warn"><strong>Gap → ResendRequest (35=2):</strong> The exchange detected a hole and is asking you to replay. Reply with the missing messages, or send a <code>35=4</code> SequenceReset GapFill with <code>36=NewSeqNo</code> skipping past the gap.</div>
         </div>
 
-        <!-- ── PY5 ── -->
+        <!-- ── PY6: P-06 Kafka Lag Monitor ── -->
         <div class="slide">
-          <div class="sl-num">PYTHON & BASH · SLIDE 5 / 5</div>
-          <div class="sl-title">Debugging Tools</div>
-          <div class="sl-sub">Diagnosing Python errors in production support scripts</div>
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 6 / 8</div>
+          <div class="sl-title">P-06 — Kafka Lag Monitor</div>
+          <div class="sl-sub">Poll consumer group lag, alert on backlog, identify which partition is stuck</div>
           <div class="sl-rule"></div>
-          <pre><span class="cm"># Check installed packages</span>
-<span class="fn">pip</span> list | grep -i <span class="str">"kafka\|h5py\|pandas"</span>
-python -c <span class="str">"import kafka; print(kafka.__version__)"</span>
+          <pre><span class="kw">import</span> subprocess, json, sys
 
-<span class="cm"># Run with verbose output</span>
-python -v script.py           <span class="cm"># shows every import</span>
-python -m pdb script.py       <span class="cm"># interactive debugger</span>
-python -m cProfile -s cumtime script.py | head -20  <span class="cm"># profiling</span>
+LAG_WARN  = <span class="nm">1_000</span>
+LAG_CRIT  = <span class="nm">10_000</span>
+GROUP     = <span class="str">"tick-storage-group"</span>
+BOOTSTRAP = <span class="str">"broker-0:9092"</span>
 
-<span class="cm"># Environment</span>
-<span class="fn">env</span> | grep -i kafka            <span class="cm"># check env vars (bootstrap servers, topics)</span>
-<span class="fn">which</span> python && python --version
+<span class="kw">def</span> <span class="fn">get_lag</span>() -> list:
+    raw = subprocess.<span class="fn">check_output</span>([
+        <span class="str">"kafka-consumer-groups.sh"</span>,
+        <span class="str">"--bootstrap-server"</span>, BOOTSTRAP,
+        <span class="str">"--group"</span>, GROUP,
+        <span class="str">"--describe"</span>, <span class="str">"--output"</span>, <span class="str">"json"</span>,
+    ], text=<span class="kw">True</span>)
+    <span class="kw">return</span> json.<span class="fn">loads</span>(raw)
 
-<span class="cm"># Common errors and causes</span></pre>
-          <table style="margin-top:4px">
-            <tr><th>Error</th><th>Cause</th><th>Fix</th></tr>
-            <tr><td><code>ModuleNotFoundError</code></td><td>Wrong virtualenv or package not installed</td><td><code>pip install kafka-python h5py pandas</code></td></tr>
-            <tr><td><code>PermissionError</code> on HDF5</td><td>File locked by another process</td><td><code>lsof | grep file.h5</code> — find and stop the holder</td></tr>
-            <tr><td><code>ConnectionRefusedError</code></td><td>Broker down or wrong port</td><td><code>nc -zv broker 9092</code></td></tr>
-            <tr><td><code>KafkaTimeoutError</code></td><td>Network issue or broker overloaded</td><td>Check broker health; check consumer group lag</td></tr>
-            <tr><td><code>OSError: no space left</code></td><td>Disk full during HDF5 write</td><td><code>df -h</code>; clear old files; check write path</td></tr>
-          </table>
+<span class="kw">def</span> <span class="fn">check_lag</span>():
+    worst = <span class="nm">0</span>
+    <span class="kw">for</span> entry <span class="kw">in</span> <span class="fn">get_lag</span>():
+        lag  = entry.<span class="fn">get</span>(<span class="str">"lag"</span>, <span class="nm">0</span>)
+        part = <span class="str">f"{entry['topic']}[{entry['partition']}]"</span>
+        <span class="kw">if</span> lag >= LAG_CRIT:
+            <span class="fn">print</span>(<span class="str">f"CRITICAL {part} lag={lag:,}"</span>); worst = <span class="nm">2</span>
+        <span class="kw">elif</span> lag >= LAG_WARN:
+            <span class="fn">print</span>(<span class="str">f"WARNING  {part} lag={lag:,}"</span>); worst = <span class="fn">max</span>(worst, <span class="nm">1</span>)
+        <span class="kw">else</span>:
+            <span class="fn">print</span>(<span class="str">f"OK       {part} lag={lag:,}"</span>)
+    sys.<span class="fn">exit</span>(worst)
+
+<span class="cm"># Quick Bash check (no Python needed)</span>
+<span class="cm"># kafka-consumer-groups.sh --bootstrap-server broker:9092 \</span>
+<span class="cm">#   --group tick-storage-group --describe \</span>
+<span class="cm">#   | awk 'NR>1 {print $6}' | sort -rn | head -5</span></pre>
+          <div class="tip"><strong>Root cause ladder:</strong> Lag on one partition → that consumer thread is stuck (check <code>--members</code>). Lag on all partitions → producer rate exceeds consumer throughput, or the consumer pod was OOMKilled.</div>
+        </div>
+
+        <!-- ── PY7: P-07 OOP Strategy Pattern ── -->
+        <div class="slide">
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 7 / 8</div>
+          <div class="sl-title">P-07 — OOP: Strategy Pattern</div>
+          <div class="sl-sub">Swap pricing algorithms at runtime without touching caller code — canonical trading-desk pattern</div>
+          <div class="sl-rule"></div>
+          <pre><span class="kw">from</span> abc <span class="kw">import</span> ABC, abstractmethod
+<span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
+
+@dataclass
+<span class="kw">class</span> Tick:
+    price: float; volume: int
+
+<span class="kw">class</span> PricingStrategy(ABC):
+    @abstractmethod
+    <span class="kw">def</span> <span class="fn">compute</span>(self, ticks: list) -> float: ...
+
+<span class="kw">class</span> VWAPStrategy(PricingStrategy):
+    <span class="kw">def</span> <span class="fn">compute</span>(self, ticks) -> float:
+        <span class="kw">return</span> (<span class="fn">sum</span>(t.price * t.volume <span class="kw">for</span> t <span class="kw">in</span> ticks)
+                / <span class="fn">sum</span>(t.volume <span class="kw">for</span> t <span class="kw">in</span> ticks))
+
+<span class="kw">class</span> MidpointStrategy(PricingStrategy):
+    <span class="kw">def</span> <span class="fn">compute</span>(self, ticks) -> float:
+        prices = [t.price <span class="kw">for</span> t <span class="kw">in</span> ticks]
+        <span class="kw">return</span> (<span class="fn">min</span>(prices) + <span class="fn">max</span>(prices)) / <span class="nm">2</span>
+
+<span class="kw">class</span> LastPriceStrategy(PricingStrategy):
+    <span class="kw">def</span> <span class="fn">compute</span>(self, ticks) -> float:
+        <span class="kw">return</span> ticks[-<span class="nm">1</span>].price
+
+<span class="kw">class</span> PriceEngine:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, strategy: PricingStrategy):
+        self._strategy = strategy
+
+    <span class="kw">def</span> <span class="fn">set_strategy</span>(self, strategy: PricingStrategy):
+        self._strategy = strategy   <span class="cm"># hot-swap without restart</span>
+
+    <span class="kw">def</span> <span class="fn">price</span>(self, symbol: str, ticks: list) -> float:
+        result = self._strategy.<span class="fn">compute</span>(ticks)
+        <span class="fn">print</span>(<span class="str">f"[{symbol}] {type(self._strategy).__name__} → {result:.4f}"</span>)
+        <span class="kw">return</span> result</pre>
+          <div class="note"><strong>Support angle:</strong> If a researcher reports "prices changed after deployment," <code>set_strategy</code> is the audit point. Add a log line there in production so you can trace which strategy was active when.</div>
+        </div>
+
+        <!-- ── PY8: P-08 OOP Observer Pattern ── -->
+        <div class="slide">
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 8 / 8</div>
+          <div class="sl-title">P-08 — OOP: Observer Pattern</div>
+          <div class="sl-sub">Fan out market data ticks to multiple subscribers — decouple the feed from every consumer</div>
+          <div class="sl-rule"></div>
+          <pre><span class="kw">from</span> abc <span class="kw">import</span> ABC, abstractmethod
+<span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass, field
+<span class="kw">from</span> typing <span class="kw">import</span> List
+<span class="kw">import</span> logging
+
+@dataclass
+<span class="kw">class</span> Tick:
+    symbol: str; price: float; volume: int
+
+<span class="kw">class</span> TickObserver(ABC):
+    @abstractmethod
+    <span class="kw">def</span> <span class="fn">on_tick</span>(self, tick: Tick) -> <span class="kw">None</span>: ...
+
+<span class="kw">class</span> HDF5Writer(TickObserver):
+    <span class="kw">def</span> <span class="fn">on_tick</span>(self, tick: Tick):
+        <span class="fn">print</span>(<span class="str">f"HDF5 ← {tick.symbol} {tick.price}"</span>)
+
+<span class="kw">class</span> RiskMonitor(TickObserver):
+    <span class="kw">def</span> <span class="fn">on_tick</span>(self, tick: Tick):
+        <span class="kw">if</span> tick.price <= <span class="nm">0</span>:
+            logging.<span class="fn">error</span>(<span class="str">"Zero/negative price for %s"</span>, tick.symbol)
+
+<span class="kw">class</span> MarketDataFeed:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        self._observers: List[TickObserver] = []
+
+    <span class="kw">def</span> <span class="fn">subscribe</span>(self, obs: TickObserver):   self._observers.<span class="fn">append</span>(obs)
+    <span class="kw">def</span> <span class="fn">unsubscribe</span>(self, obs: TickObserver): self._observers.<span class="fn">remove</span>(obs)
+
+    <span class="kw">def</span> <span class="fn">publish</span>(self, tick: Tick):
+        <span class="kw">for</span> obs <span class="kw">in</span> self._observers:
+            <span class="kw">try</span>:
+                obs.<span class="fn">on_tick</span>(tick)
+            <span class="kw">except</span> Exception <span class="kw">as</span> e:
+                logging.<span class="fn">error</span>(<span class="str">"Observer %s failed: %s"</span>, <span class="fn">type</span>(obs).__name__, e)</pre>
+          <div class="warn"><strong>Isolate observer failures.</strong> The <code>try/except</code> inside <code>publish()</code> is intentional: a broken HDF5Writer (disk full) must not prevent RiskMonitor from receiving ticks. Never let one subscriber take down the bus.</div>
         </div>
 
       </div>
@@ -4050,7 +4265,7 @@ const state = {};   // { deckId: currentIndex }
 // ── Deck counts ──
 const COUNTS = {
   fix: 22, kafka: 8, k8s: 9, marketdata: 8,
-  sql: 7, airflow: 8, linux: 6, python: 5,
+  sql: 7, airflow: 8, linux: 6, python: 8,
   aws: 5, networking: 4, git: 4, support: 7, interview: 6
 };
 
@@ -4118,6 +4333,32 @@ function showDeck(id) {
   document.getElementById('nav-' + id).classList.add('active');
   goTo(id, 0);
 }
+
+// ── Zoom ──
+const ZOOMS = [0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00];
+let zoomIdx = ZOOMS.indexOf(0.85);
+
+function applyZoom(idx) {
+  idx = Math.max(0, Math.min(ZOOMS.length - 1, idx));
+  zoomIdx = idx;
+  const z = ZOOMS[idx];
+  document.body.style.zoom = z;
+  const lbl = document.getElementById('zoom-label');
+  if (lbl) lbl.textContent = Math.round(z * 100) + '%';
+  try { localStorage.setItem('uiZoom', idx); } catch(e) {}
+}
+
+function adjZoom(d) { applyZoom(zoomIdx + d); }
+
+// Restore saved zoom (default 85%)
+(function() {
+  try {
+    const s = parseInt(localStorage.getItem('uiZoom'));
+    applyZoom(isNaN(s) ? ZOOMS.indexOf(0.85) : s);
+  } catch(e) {
+    applyZoom(ZOOMS.indexOf(0.85));
+  }
+})();
 
 // ── Download zip ──
 async function downloadZip() {
