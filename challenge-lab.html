@@ -510,6 +510,97 @@
   }
   .dl-btn:hover:not(:disabled) { background: rgba(232,107,26,0.28); }
   .dl-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── Quiz slides ── */
+  .quiz-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .quiz-q { display: flex; flex-direction: column; gap: 7px; }
+  .quiz-q-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.4;
+    margin-bottom: 2px;
+  }
+  .quiz-opts { display: flex; flex-direction: column; gap: 5px; }
+  .quiz-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1.4;
+    background: rgba(255,255,255,0.02);
+    transition: border-color 0.12s, background 0.12s;
+    user-select: none;
+  }
+  .quiz-opt:hover { border-color: var(--accent); background: rgba(232,107,26,0.06); }
+  .quiz-opt input[type=radio] { position: absolute; opacity: 0; width: 0; height: 0; }
+  .quiz-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    background: var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.12s;
+  }
+  .quiz-opt.selected { border-color: var(--blue); background: rgba(128,200,255,0.08); }
+  .quiz-opt.selected .quiz-key { background: var(--blue); color: #12121e; }
+  .quiz-opt.correct { border-color: #22c55e; background: rgba(34,197,94,0.12); }
+  .quiz-opt.correct .quiz-key { background: #22c55e; color: #052e0a; }
+  .quiz-opt.wrong { border-color: var(--red); background: rgba(248,113,113,0.10); }
+  .quiz-opt.wrong .quiz-key { background: var(--red); color: #3f0505; }
+  .quiz-opt.reveal-correct { border-color: rgba(34,197,94,0.45); }
+  .quiz-opt.reveal-correct .quiz-key { background: rgba(34,197,94,0.22); color: #22c55e; }
+  .quiz-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .quiz-submit-btn {
+    background: rgba(232,107,26,0.14);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 18px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .quiz-submit-btn:hover:not(:disabled) { background: rgba(232,107,26,0.28); }
+  .quiz-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .quiz-score-lbl { font-family: var(--mono); font-size: 14px; font-weight: 700; min-width: 60px; }
+  .quiz-reset-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: none;
+    transition: all 0.12s;
+  }
+  .quiz-reset-btn:hover { border-color: var(--muted); color: var(--text); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
@@ -537,55 +628,55 @@
 
     <div class="nav-item active" onclick="showDeck('fix')"        id="nav-fix">
       <span class="nav-dot"></span> Market Protocols
-      <span class="badge">22</span>
+      <span class="badge">23</span>
     </div>
     <div class="nav-item" onclick="showDeck('kafka')"      id="nav-kafka">
       <span class="nav-dot"></span> Kafka
-      <span class="badge">8</span>
+      <span class="badge">9</span>
     </div>
     <div class="nav-item" onclick="showDeck('k8s')"        id="nav-k8s">
       <span class="nav-dot"></span> Kubernetes &amp; Argo
-      <span class="badge">9</span>
+      <span class="badge">10</span>
     </div>
     <div class="nav-item" onclick="showDeck('marketdata')" id="nav-marketdata">
       <span class="nav-dot"></span> Market Data
-      <span class="badge">8</span>
+      <span class="badge">9</span>
     </div>
     <div class="nav-item" onclick="showDeck('sql')"        id="nav-sql">
       <span class="nav-dot"></span> SQL
-      <span class="badge">7</span>
+      <span class="badge">8</span>
     </div>
     <div class="nav-item" onclick="showDeck('airflow')"    id="nav-airflow">
       <span class="nav-dot"></span> Airflow
-      <span class="badge">8</span>
+      <span class="badge">9</span>
     </div>
     <div class="nav-item" onclick="showDeck('linux')"      id="nav-linux">
       <span class="nav-dot"></span> Linux &amp; Systems
-      <span class="badge">6</span>
+      <span class="badge">7</span>
     </div>
     <div class="nav-item" onclick="showDeck('python')"     id="nav-python">
       <span class="nav-dot"></span> Python &amp; Bash
-      <span class="badge">5</span>
+      <span class="badge">9</span>
     </div>
     <div class="nav-item" onclick="showDeck('aws')"        id="nav-aws">
       <span class="nav-dot"></span> AWS
-      <span class="badge">5</span>
+      <span class="badge">6</span>
     </div>
     <div class="nav-item" onclick="showDeck('networking')" id="nav-networking">
       <span class="nav-dot"></span> Networking
-      <span class="badge">4</span>
+      <span class="badge">5</span>
     </div>
     <div class="nav-item" onclick="showDeck('git')"        id="nav-git">
       <span class="nav-dot"></span> Git
-      <span class="badge">4</span>
+      <span class="badge">5</span>
     </div>
     <div class="nav-item" onclick="showDeck('support')"   id="nav-support">
       <span class="nav-dot"></span> Support &amp; Incidents
-      <span class="badge">7</span>
+      <span class="badge">8</span>
     </div>
     <div class="nav-item" onclick="showDeck('interview')" id="nav-interview">
       <span class="nav-dot"></span> Interview Prep
-      <span class="badge">6</span>
+      <span class="badge">7</span>
     </div>
   </aside>
 
@@ -1218,6 +1309,68 @@
           </table>
           <div class="tip"><strong>Escalation signal:</strong> If both A and B feeds show the same gap at the same sequence number → the exchange dropped packets, not your infrastructure. Open an exchange support ticket.</div>
         </div>
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">MARKET PROTOCOLS · SLIDE 23 / 23</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Market Protocols — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-fix">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">1. Which FIX tag carries the message type?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-fix-1" value="A"><span class="quiz-key">A</span>Tag 8 — BeginString</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-1" value="B"><span class="quiz-key">B</span>Tag 49 — SenderCompID</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-1" value="C"><span class="quiz-key">C</span>Tag 35 — MsgType</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-1" value="D"><span class="quiz-key">D</span>Tag 10 — CheckSum</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">2. A FIX Execution Report with OrdStatus=8 means the order was:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-fix-2" value="A"><span class="quiz-key">A</span>Filled</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-2" value="B"><span class="quiz-key">B</span>Rejected</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-2" value="C"><span class="quiz-key">C</span>Cancelled</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-2" value="D"><span class="quiz-key">D</span>Partially Filled</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">3. The FIX CheckSum (tag 10) is the:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-fix-3" value="A"><span class="quiz-key">A</span>SHA-256 hash of the body</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-3" value="B"><span class="quiz-key">B</span>CRC32 of all fields</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-3" value="C"><span class="quiz-key">C</span>Sum of all byte values mod 256</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-3" value="D"><span class="quiz-key">D</span>Message length in bytes</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">4. ITCH differs from FIX because ITCH is:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-fix-4" value="A"><span class="quiz-key">A</span>XML-based and bidirectional</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-4" value="B"><span class="quiz-key">B</span>Binary and unidirectional market-data broadcast</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-4" value="C"><span class="quiz-key">C</span>Text-based with encryption</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-4" value="D"><span class="quiz-key">D</span>Used only for order cancellation</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">5. SenderCompID and TargetCompID appear in which section of a FIX message?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-fix-5" value="A"><span class="quiz-key">A</span>Body</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-5" value="B"><span class="quiz-key">B</span>Trailer</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-5" value="C"><span class="quiz-key">C</span>Footer</label>
+                  <label class="quiz-opt"><input type="radio" name="q-fix-5" value="D"><span class="quiz-key">D</span>Header</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('fix')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-fix"></span>
+              <button class="quiz-reset-btn" id="reset-fix" onclick="resetQuiz('fix')">Try Again</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="slide-nav">
         <button class="nav-btn" id="prev-fix" onclick="nav('fix',-1)" disabled>← Prev</button>
@@ -1456,6 +1609,68 @@ consumer = KafkaConsumer(
 <span class="fn">kafka-topics.sh</span> --bootstrap-server broker:9092 --list</pre>
         </div>
 
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">KAFKA · SLIDE 9 / 9</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Kafka — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-kafka">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">1. In Kafka, message ordering is guaranteed within a:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-1" value="A"><span class="quiz-key">A</span>Topic</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-1" value="B"><span class="quiz-key">B</span>Consumer Group</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-1" value="C"><span class="quiz-key">C</span>Partition</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-1" value="D"><span class="quiz-key">D</span>Broker</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">2. A producer with acks=all requires acknowledgment from:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-2" value="A"><span class="quiz-key">A</span>The leader only</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-2" value="B"><span class="quiz-key">B</span>A majority quorum</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-2" value="C"><span class="quiz-key">C</span>No broker</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-2" value="D"><span class="quiz-key">D</span>All in-sync replicas</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">3. When max.poll.interval.ms is exceeded the consumer is:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-3" value="A"><span class="quiz-key">A</span>Paused temporarily</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-3" value="B"><span class="quiz-key">B</span>Removed from the group and rebalance triggers</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-3" value="C"><span class="quiz-key">C</span>Throttled by the broker</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-3" value="D"><span class="quiz-key">D</span>Sent a retry signal</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">4. The __consumer_offsets topic stores:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-4" value="A"><span class="quiz-key">A</span>Message payloads</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-4" value="B"><span class="quiz-key">B</span>Topic configurations</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-4" value="C"><span class="quiz-key">C</span>Committed offsets for consumer groups</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-4" value="D"><span class="quiz-key">D</span>Producer acknowledgments</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">5. With replication factor 3 and min.insync.replicas=2, how many broker failures can you sustain while still accepting writes?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-5" value="A"><span class="quiz-key">A</span>0</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-5" value="B"><span class="quiz-key">B</span>1</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-5" value="C"><span class="quiz-key">C</span>2</label>
+                  <label class="quiz-opt"><input type="radio" name="q-kafka-5" value="D"><span class="quiz-key">D</span>3</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('kafka')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-kafka"></span>
+              <button class="quiz-reset-btn" id="reset-kafka" onclick="resetQuiz('kafka')">Try Again</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="slide-nav">
         <button class="nav-btn" id="prev-kafka" onclick="nav('kafka',-1)" disabled>← Prev</button>
@@ -1757,6 +1972,68 @@ consumer = KafkaConsumer(
 <span class="fn">argocd</span> app rollback &lt;app&gt; &lt;revision&gt;</pre>
         </div>
 
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">KUBERNETES & ARGO · SLIDE 10 / 10</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Kubernetes & Argo — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-k8s">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">1. Which Kubernetes object ensures N replicas of a pod always run?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-1" value="A"><span class="quiz-key">A</span>DaemonSet</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-1" value="B"><span class="quiz-key">B</span>Job</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-1" value="C"><span class="quiz-key">C</span>ReplicaSet</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-1" value="D"><span class="quiz-key">D</span>StatefulSet</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">2. kubectl rollout undo deployment/myapp does what?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-2" value="A"><span class="quiz-key">A</span>Deletes the deployment</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-2" value="B"><span class="quiz-key">B</span>Scales the deployment to zero</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-2" value="C"><span class="quiz-key">C</span>Rolls back to the previous ReplicaSet</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-2" value="D"><span class="quiz-key">D</span>Pauses the rollout</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">3. A pod in CrashLoopBackOff state means:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-3" value="A"><span class="quiz-key">A</span>The image cannot be pulled</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-3" value="B"><span class="quiz-key">B</span>The container starts and immediately crashes, repeatedly</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-3" value="C"><span class="quiz-key">C</span>A network policy is blocking traffic</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-3" value="D"><span class="quiz-key">D</span>The node has insufficient resources</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">4. In Argo Workflows, a DAG template specifies:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-4" value="A"><span class="quiz-key">A</span>Resource limits for pods</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-4" value="B"><span class="quiz-key">B</span>Artifact storage locations</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-4" value="C"><span class="quiz-key">C</span>Retry policies for failed steps</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-4" value="D"><span class="quiz-key">D</span>Task dependencies via a directed acyclic graph</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="A">
+                <div class="quiz-q-text">5. Which command shows logs from the previous (crashed) container instance?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-5" value="A"><span class="quiz-key">A</span>kubectl logs &lt;pod&gt; --previous</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-5" value="B"><span class="quiz-key">B</span>kubectl logs &lt;pod&gt; -c prev</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-5" value="C"><span class="quiz-key">C</span>kubectl get logs --last</label>
+                  <label class="quiz-opt"><input type="radio" name="q-k8s-5" value="D"><span class="quiz-key">D</span>kubectl describe pod | grep logs</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('k8s')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-k8s"></span>
+              <button class="quiz-reset-btn" id="reset-k8s" onclick="resetQuiz('k8s')">Try Again</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="slide-nav">
         <button class="nav-btn" id="prev-k8s" onclick="nav('k8s',-1)" disabled>← Prev</button>
@@ -2008,6 +2285,68 @@ slippage = (<span class="nm">150.05</span> - <span class="nm">149.90</span>) / <
           </table>
         </div>
 
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">MARKET DATA · SLIDE 9 / 9</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Market Data — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-marketdata">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">1. HDF5 organizes data using which hierarchical structure?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-1" value="A"><span class="quiz-key">A</span>Tables and rows</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-1" value="B"><span class="quiz-key">B</span>Collections and documents</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-1" value="C"><span class="quiz-key">C</span>Shards and segments</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-1" value="D"><span class="quiz-key">D</span>Groups and datasets</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">2. VWAP is calculated as:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-2" value="A"><span class="quiz-key">A</span>(High + Low + Close) / 3</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-2" value="B"><span class="quiz-key">B</span>Sum(price x volume) / Sum(volume)</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-2" value="C"><span class="quiz-key">C</span>Total volume divided by time elapsed</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-2" value="D"><span class="quiz-key">D</span>Average of all trade prices</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">3. A "sequence gap" in a market data feed most likely indicates:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-3" value="A"><span class="quiz-key">A</span>A stale price</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-3" value="B"><span class="quiz-key">B</span>A slow consumer</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-3" value="C"><span class="quiz-key">C</span>Dropped UDP packets causing missed messages</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-3" value="D"><span class="quiz-key">D</span>Planned exchange maintenance</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">4. L2 order book data shows:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-4" value="A"><span class="quiz-key">A</span>Only the best bid and offer (L1 data)</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-4" value="B"><span class="quiz-key">B</span>Historical OHLCV bars</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-4" value="C"><span class="quiz-key">C</span>Last trade price only</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-4" value="D"><span class="quiz-key">D</span>Full depth — all price levels and their quantities</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">5. Which storage format is most common for HFT tick data in quant finance?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-5" value="A"><span class="quiz-key">A</span>CSV</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-5" value="B"><span class="quiz-key">B</span>JSON</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-5" value="C"><span class="quiz-key">C</span>HDF5 or Parquet</label>
+                  <label class="quiz-opt"><input type="radio" name="q-marketdata-5" value="D"><span class="quiz-key">D</span>XML</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('marketdata')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-marketdata"></span>
+              <button class="quiz-reset-btn" id="reset-marketdata" onclick="resetQuiz('marketdata')">Try Again</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="slide-nav">
         <button class="nav-btn" id="prev-marketdata" onclick="nav('marketdata',-1)" disabled>← Prev</button>
@@ -2241,6 +2580,68 @@ slippage = (<span class="nm">150.05</span> - <span class="nm">149.90</span>) / <
           </table>
         </div>
 
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">SQL · SLIDE 8 / 8</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">SQL — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-sql">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">1. Which window function returns the previous row's value?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-sql-1" value="A"><span class="quiz-key">A</span>RANK()</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-1" value="B"><span class="quiz-key">B</span>LAG()</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-1" value="C"><span class="quiz-key">C</span>ROW_NUMBER()</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-1" value="D"><span class="quiz-key">D</span>LEAD()</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">2. The EXCEPT operator returns:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-sql-2" value="A"><span class="quiz-key">A</span>All rows from both queries</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-2" value="B"><span class="quiz-key">B</span>Rows present only in the second query</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-2" value="C"><span class="quiz-key">C</span>Rows in the first query that are not in the second</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-2" value="D"><span class="quiz-key">D</span>Only matching rows</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">3. A LEFT JOIN returns:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-sql-3" value="A"><span class="quiz-key">A</span>Only matching rows</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-3" value="B"><span class="quiz-key">B</span>The Cartesian product</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-3" value="C"><span class="quiz-key">C</span>All rows from the right table</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-3" value="D"><span class="quiz-key">D</span>All rows from the left table; NULLs where right has no match</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">4. To find sequence gaps in tick data, which approach is most efficient?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-sql-4" value="A"><span class="quiz-key">A</span>UNION ALL then filter</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-4" value="B"><span class="quiz-key">B</span>GROUP BY with HAVING</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-4" value="C"><span class="quiz-key">C</span>DISTINCT and ORDER BY</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-4" value="D"><span class="quiz-key">D</span>LAG() window function comparing consecutive sequence numbers</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">5. Which isolation level prevents dirty reads but allows non-repeatable reads?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-sql-5" value="A"><span class="quiz-key">A</span>Serializable</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-5" value="B"><span class="quiz-key">B</span>Read Uncommitted</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-5" value="C"><span class="quiz-key">C</span>Repeatable Read</label>
+                  <label class="quiz-opt"><input type="radio" name="q-sql-5" value="D"><span class="quiz-key">D</span>Read Committed</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('sql')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-sql"></span>
+              <button class="quiz-reset-btn" id="reset-sql" onclick="resetQuiz('sql')">Try Again</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="slide-nav">
         <button class="nav-btn" id="prev-sql" onclick="nav('sql',-1)" disabled>← Prev</button>
@@ -2528,6 +2929,68 @@ cursor.<span class="fn">execute</span>(<span class="str">"""
           </table>
         </div>
 
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">AIRFLOW · SLIDE 9 / 9</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Airflow — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-airflow">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">1. Using datetime.now() inside an Airflow task breaks:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-1" value="A"><span class="quiz-key">A</span>Timezone conversion</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-1" value="B"><span class="quiz-key">B</span>Worker scheduling</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-1" value="C"><span class="quiz-key">C</span>Idempotency — reruns produce different timestamps</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-1" value="D"><span class="quiz-key">D</span>DAG file parsing</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">2. Airflow's execution_date represents:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-2" value="A"><span class="quiz-key">A</span>When the task actually started</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-2" value="B"><span class="quiz-key">B</span>The logical interval start (data interval start)</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-2" value="C"><span class="quiz-key">C</span>The current wall-clock time</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-2" value="D"><span class="quiz-key">D</span>The DAG file modification time</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">3. Sensor mode="reschedule" differs from mode="poke" because it:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-3" value="A"><span class="quiz-key">A</span>Runs in a subprocess</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-3" value="B"><span class="quiz-key">B</span>Never retries on failure</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-3" value="C"><span class="quiz-key">C</span>Releases the worker slot between checks</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-3" value="D"><span class="quiz-key">D</span>Checks more frequently</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">4. To re-run a failed task for a specific past date without re-running other tasks you should:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-4" value="A"><span class="quiz-key">A</span>Delete and recreate the DAG</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-4" value="B"><span class="quiz-key">B</span>Use backfill --reset-dagruns</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-4" value="C"><span class="quiz-key">C</span>Clear the specific task instances for that run</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-4" value="D"><span class="quiz-key">D</span>Trigger the DAG with --exec-date</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">5. Which concept means a task can run multiple times and always produce the same result?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-5" value="A"><span class="quiz-key">A</span>Parallelism</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-5" value="B"><span class="quiz-key">B</span>Atomicity</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-5" value="C"><span class="quiz-key">C</span>Backpressure</label>
+                  <label class="quiz-opt"><input type="radio" name="q-airflow-5" value="D"><span class="quiz-key">D</span>Idempotency</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('airflow')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-airflow"></span>
+              <button class="quiz-reset-btn" id="reset-airflow" onclick="resetQuiz('airflow')">Try Again</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="slide-nav">
         <button class="nav-btn" id="prev-airflow" onclick="nav('airflow',-1)" disabled>← Prev</button>
@@ -2701,6 +3164,68 @@ cursor.<span class="fn">execute</span>(<span class="str">"""
           <div class="tip"><strong>Escalation package:</strong> PID · CPU/mem snapshot · last 50 log lines · exact error message · first occurrence timestamp · dependency connectivity test result.</div>
         </div>
 
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">LINUX & SYSTEMS · SLIDE 7 / 7</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Linux & Systems — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-linux">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">1. Which command shows real-time CPU and memory usage per process?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-linux-1" value="A"><span class="quiz-key">A</span>ps aux</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-1" value="B"><span class="quiz-key">B</span>vmstat</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-1" value="C"><span class="quiz-key">C</span>top or htop</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-1" value="D"><span class="quiz-key">D</span>lsof</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">2. lsof -i :8080 shows:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-linux-2" value="A"><span class="quiz-key">A</span>Files modified at timestamp 8080</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-2" value="B"><span class="quiz-key">B</span>Processes using port 8080</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-2" value="C"><span class="quiz-key">C</span>Memory usage of PID 8080</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-2" value="D"><span class="quiz-key">D</span>Network packets captured on port 8080</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">3. A zombie process is one that:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-linux-3" value="A"><span class="quiz-key">A</span>Consumes 100% CPU</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-3" value="B"><span class="quiz-key">B</span>Is blocked on I/O</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-3" value="C"><span class="quiz-key">C</span>Has exited but whose parent has not yet called wait()</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-3" value="D"><span class="quiz-key">D</span>Has no controlling TTY</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">4. ulimit -n controls:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-linux-4" value="A"><span class="quiz-key">A</span>Maximum number of processes</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-4" value="B"><span class="quiz-key">B</span>Stack size limit</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-4" value="C"><span class="quiz-key">C</span>Network buffer size</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-4" value="D"><span class="quiz-key">D</span>Maximum file descriptor count per process</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">5. journalctl -u myservice --since "1 hour ago" does what?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-linux-5" value="A"><span class="quiz-key">A</span>Starts and monitors the service</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-5" value="B"><span class="quiz-key">B</span>Checks service health status</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-5" value="C"><span class="quiz-key">C</span>Shows systemd journal logs for myservice from the past hour</label>
+                  <label class="quiz-opt"><input type="radio" name="q-linux-5" value="D"><span class="quiz-key">D</span>Rotates log files older than one hour</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('linux')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-linux"></span>
+              <button class="quiz-reset-btn" id="reset-linux" onclick="resetQuiz('linux')">Try Again</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="slide-nav">
         <button class="nav-btn" id="prev-linux" onclick="nav('linux',-1)" disabled>← Prev</button>
@@ -3053,6 +3578,68 @@ BOOTSTRAP = <span class="str">"broker-0:9092"</span>
           <div class="warn"><strong>Isolate observer failures.</strong> The <code>try/except</code> inside <code>publish()</code> is intentional: a broken HDF5Writer (disk full) must not prevent RiskMonitor from receiving ticks. Never let one subscriber take down the bus.</div>
         </div>
 
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">PYTHON & BASH · SLIDE 9 / 9</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Python & Bash — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-python">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">1. asyncio.gather() is used to:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-python-1" value="A"><span class="quiz-key">A</span>Synchronize threads</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-1" value="B"><span class="quiz-key">B</span>Cancel running tasks</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-1" value="C"><span class="quiz-key">C</span>Schedule tasks for a future time</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-1" value="D"><span class="quiz-key">D</span>Run multiple coroutines concurrently</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">2. A Python @dataclass with frozen=True makes instances:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-python-2" value="A"><span class="quiz-key">A</span>JSON-serializable by default</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-2" value="B"><span class="quiz-key">B</span>Thread-safe</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-2" value="C"><span class="quiz-key">C</span>Immutable and hashable</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-2" value="D"><span class="quiz-key">D</span>Automatically pickleable</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">3. In Bash, set -e causes the script to:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-python-3" value="A"><span class="quiz-key">A</span>Export all variables automatically</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-3" value="B"><span class="quiz-key">B</span>Suppress error messages</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-3" value="C"><span class="quiz-key">C</span>Echo every command before executing</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-3" value="D"><span class="quiz-key">D</span>Exit immediately on any non-zero return code</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">4. pandas.DataFrame.merge(how="left") is equivalent to which SQL join?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-python-4" value="A"><span class="quiz-key">A</span>INNER JOIN</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-4" value="B"><span class="quiz-key">B</span>LEFT OUTER JOIN</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-4" value="C"><span class="quiz-key">C</span>RIGHT OUTER JOIN</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-4" value="D"><span class="quiz-key">D</span>FULL OUTER JOIN</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">5. For high-performance numerical arrays stored in HDF5, the standard Python libraries are:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-python-5" value="A"><span class="quiz-key">A</span>pandas + sqlite3</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-5" value="B"><span class="quiz-key">B</span>scipy + netCDF4</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-5" value="C"><span class="quiz-key">C</span>numpy + h5py</label>
+                  <label class="quiz-opt"><input type="radio" name="q-python-5" value="D"><span class="quiz-key">D</span>polars + duckdb</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('python')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-python"></span>
+              <button class="quiz-reset-btn" id="reset-python" onclick="resetQuiz('python')">Try Again</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="slide-nav">
         <button class="nav-btn" id="prev-python" onclick="nav('python',-1)" disabled>← Prev</button>
@@ -3278,6 +3865,68 @@ aws logs start-query \
           </div>
         </div>
 
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">AWS · SLIDE 6 / 6</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">AWS — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-aws">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">1. AWS Lambda's maximum execution timeout is:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-aws-1" value="A"><span class="quiz-key">A</span>5 minutes</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-1" value="B"><span class="quiz-key">B</span>10 minutes</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-1" value="C"><span class="quiz-key">C</span>30 minutes</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-1" value="D"><span class="quiz-key">D</span>15 minutes</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">2. Amazon SQS FIFO queues guarantee:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-aws-2" value="A"><span class="quiz-key">A</span>Higher throughput than Standard queues</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-2" value="B"><span class="quiz-key">B</span>At-least-once delivery only</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-2" value="C"><span class="quiz-key">C</span>Message ordering and exactly-once processing</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-2" value="D"><span class="quiz-key">D</span>Free retries for all failures</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">3. EKS Node Groups use which underlying AWS resource?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-aws-3" value="A"><span class="quiz-key">A</span>ECS tasks</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-3" value="B"><span class="quiz-key">B</span>EMR clusters</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-3" value="C"><span class="quiz-key">C</span>Fargate profiles</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-3" value="D"><span class="quiz-key">D</span>EC2 Auto Scaling Groups</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">4. CloudWatch Logs Insights is best used for:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-aws-4" value="A"><span class="quiz-key">A</span>Setting billing alarms</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-4" value="B"><span class="quiz-key">B</span>Real-time metric dashboards</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-4" value="C"><span class="quiz-key">C</span>Querying log data with a SQL-like syntax</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-4" value="D"><span class="quiz-key">D</span>Tracing Lambda invocations end-to-end</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="A">
+                <div class="quiz-q-text">5. An S3 lifecycle rule that transitions objects to Glacier after 90 days applies to:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-aws-5" value="A"><span class="quiz-key">A</span>Current object versions</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-5" value="B"><span class="quiz-key">B</span>All versions including delete markers</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-5" value="C"><span class="quiz-key">C</span>Only deleted objects</label>
+                  <label class="quiz-opt"><input type="radio" name="q-aws-5" value="D"><span class="quiz-key">D</span>Only objects with specific tags</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('aws')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-aws"></span>
+              <button class="quiz-reset-btn" id="reset-aws" onclick="resetQuiz('aws')">Try Again</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="slide-nav">
         <button class="nav-btn" id="prev-aws" onclick="nav('aws',-1)" disabled>← Prev</button>
@@ -3484,6 +4133,68 @@ iperf3 -c server-ip -t 30 -P 4</code></pre>
           </div>
         </div>
 
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">NETWORKING · SLIDE 5 / 5</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Networking — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-networking">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">1. TCP's three-way handshake sequence is:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-networking-1" value="A"><span class="quiz-key">A</span>SYN → ACK → SYN-ACK</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-1" value="B"><span class="quiz-key">B</span>ACK → SYN → FIN</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-1" value="C"><span class="quiz-key">C</span>SYN → FIN → ACK</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-1" value="D"><span class="quiz-key">D</span>SYN → SYN-ACK → ACK</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">2. UDP is preferred over TCP for market data feeds because:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-networking-2" value="A"><span class="quiz-key">A</span>UDP guarantees delivery</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-2" value="B"><span class="quiz-key">B</span>UDP has built-in congestion control</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-2" value="C"><span class="quiz-key">C</span>UDP has lower latency — no retransmission or connection overhead</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-2" value="D"><span class="quiz-key">D</span>UDP supports larger packet sizes</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">3. An MTU of 1500 bytes defines the:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-networking-3" value="A"><span class="quiz-key">A</span>Max throughput in Mbps</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-3" value="B"><span class="quiz-key">B</span>Max concurrent TCP connections</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-3" value="C"><span class="quiz-key">C</span>Max segment size at the TCP layer</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-3" value="D"><span class="quiz-key">D</span>Maximum Layer 2 frame payload size</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">4. Multicast in trading systems is used to:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-networking-4" value="A"><span class="quiz-key">A</span>Encrypt peer-to-peer order routing</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-4" value="B"><span class="quiz-key">B</span>Deliver the same market data to many subscribers simultaneously</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-4" value="C"><span class="quiz-key">C</span>Load-balance orders across brokers</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-4" value="D"><span class="quiz-key">D</span>Store historical tick data</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="A">
+                <div class="quiz-q-text">5. Which protocol does ITCH use for transport, and why?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-networking-5" value="A"><span class="quiz-key">A</span>UDP Multicast — low latency, supports many receivers with one stream</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-5" value="B"><span class="quiz-key">B</span>TCP — guaranteed delivery is required for order book integrity</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-5" value="C"><span class="quiz-key">C</span>HTTP/2 — for compatibility with web clients</label>
+                  <label class="quiz-opt"><input type="radio" name="q-networking-5" value="D"><span class="quiz-key">D</span>FIX over TCP — to reuse existing FIX infrastructure</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('networking')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-networking"></span>
+              <button class="quiz-reset-btn" id="reset-networking" onclick="resetQuiz('networking')">Try Again</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="slide-nav">
         <button class="nav-btn" id="prev-networking" onclick="nav('networking',-1)" disabled>← Prev</button>
@@ -3692,6 +4403,68 @@ git show HEAD~1:config/kafka.yaml  # previous</code></pre>
           </div>
         </div>
 
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">GIT · SLIDE 5 / 5</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Git — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-git">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">1. git rebase main on a feature branch does what?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-git-1" value="A"><span class="quiz-key">A</span>Merges main into the feature branch with a merge commit</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-1" value="B"><span class="quiz-key">B</span>Resets the feature branch to exactly match main</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-1" value="C"><span class="quiz-key">C</span>Replays feature commits on top of main's latest tip</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-1" value="D"><span class="quiz-key">D</span>Creates a new branch from main</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">2. git stash pop differs from git stash apply in that it:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-git-2" value="A"><span class="quiz-key">A</span>Applies only the latest stash</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-2" value="B"><span class="quiz-key">B</span>Applies changes to a specific file</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-2" value="C"><span class="quiz-key">C</span>Creates a new branch from the stash</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-2" value="D"><span class="quiz-key">D</span>Also removes the stash entry after applying it</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">3. git cherry-pick &lt;commit&gt; does what?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-git-3" value="A"><span class="quiz-key">A</span>Merges an entire branch</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-3" value="B"><span class="quiz-key">B</span>Tags a commit for release</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-3" value="C"><span class="quiz-key">C</span>Copies a specific commit's changes onto the current branch</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-3" value="D"><span class="quiz-key">D</span>Reverts a commit from history</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">4. git reflog is most useful for:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-git-4" value="A"><span class="quiz-key">A</span>Comparing two branches</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-4" value="B"><span class="quiz-key">B</span>Listing all remote branch names</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-4" value="C"><span class="quiz-key">C</span>Viewing tag history</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-4" value="D"><span class="quiz-key">D</span>Recovering commits lost after a reset or rebase</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">5. What does git bisect do?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-git-5" value="A"><span class="quiz-key">A</span>Splits a commit into two smaller commits</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-5" value="B"><span class="quiz-key">B</span>Binary-searches commit history to find the commit that introduced a bug</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-5" value="C"><span class="quiz-key">C</span>Compares two branches and highlights divergence</label>
+                  <label class="quiz-opt"><input type="radio" name="q-git-5" value="D"><span class="quiz-key">D</span>Merges two branches without creating a merge commit</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('git')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-git"></span>
+              <button class="quiz-reset-btn" id="reset-git" onclick="resetQuiz('git')">Try Again</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="slide-nav">
         <button class="nav-btn" id="prev-git" onclick="nav('git',-1)" disabled>← Prev</button>
@@ -4041,6 +4814,68 @@ If unresolved after 20 min → page @senior-oncall</div>
           </div>
         </div>
 
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">SUPPORT & INCIDENTS · SLIDE 8 / 8</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Support & Incidents — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-support">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">1. During a production incident, your first priority should be:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-support-1" value="A"><span class="quiz-key">A</span>Document the full timeline</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-1" value="B"><span class="quiz-key">B</span>Identify the root cause</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-1" value="C"><span class="quiz-key">C</span>Restore service and reduce customer impact</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-1" value="D"><span class="quiz-key">D</span>Notify all stakeholders</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">2. A P1/Sev1 incident typically means:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-support-2" value="A"><span class="quiz-key">A</span>A non-critical bug in non-production</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-2" value="B"><span class="quiz-key">B</span>Performance degradation under 10%</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-2" value="C"><span class="quiz-key">C</span>Complete production outage or data loss</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-2" value="D"><span class="quiz-key">D</span>A security vulnerability in a dev environment</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">3. The "Five Whys" post-mortem technique is used to:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-support-3" value="A"><span class="quiz-key">A</span>Rank incident severity</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-3" value="B"><span class="quiz-key">B</span>Estimate recovery time</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-3" value="C"><span class="quiz-key">C</span>Assign responsibility to teams</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-3" value="D"><span class="quiz-key">D</span>Iteratively drill down to identify root cause</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">4. A sequence gap alert from the market data feed most likely indicates:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-support-4" value="A"><span class="quiz-key">A</span>A slow downstream consumer</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-4" value="B"><span class="quiz-key">B</span>Dropped UDP packets causing missed messages</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-4" value="C"><span class="quiz-key">C</span>Planned exchange maintenance</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-4" value="D"><span class="quiz-key">D</span>A stale cached price</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">5. A runbook's primary content should be:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-support-5" value="A"><span class="quiz-key">A</span>System architecture diagrams</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-5" value="B"><span class="quiz-key">B</span>Code review guidelines</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-5" value="C"><span class="quiz-key">C</span>Business requirements</label>
+                  <label class="quiz-opt"><input type="radio" name="q-support-5" value="D"><span class="quiz-key">D</span>Step-by-step procedures for known failure scenarios</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('support')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-support"></span>
+              <button class="quiz-reset-btn" id="reset-support" onclick="resetQuiz('support')">Try Again</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="slide-nav">
         <button class="nav-btn" id="prev-support" onclick="nav('support',-1)" disabled>← Prev</button>
@@ -4250,6 +5085,68 @@ If unresolved after 20 min → page @senior-oncall</div>
           </div>
         </div>
 
+
+        <!-- ── QUIZ SLIDE ── -->
+        <div class="slide">
+          <div class="sl-num">INTERVIEW PREP · SLIDE 7 / 7</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Interview Prep — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-interview">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">1. When introducing yourself in a technical interview, the best structure is:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-interview-1" value="A"><span class="quiz-key">A</span>Your life story chronologically</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-1" value="B"><span class="quiz-key">B</span>Your biggest weakness first</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-1" value="C"><span class="quiz-key">C</span>A complete list of technical skills</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-1" value="D"><span class="quiz-key">D</span>Current role → relevant experience → why this role</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">2. Behavioral stories about debugging incidents best follow which framework?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-interview-2" value="A"><span class="quiz-key">A</span>CAR (Challenge, Action, Result)</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-2" value="B"><span class="quiz-key">B</span>STAR (Situation, Task, Action, Result)</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-2" value="C"><span class="quiz-key">C</span>MECE framework</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-2" value="D"><span class="quiz-key">D</span>Agile retrospective format</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">3. VWAP is most useful in trading because it:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-interview-3" value="A"><span class="quiz-key">A</span>Predicts future price movements</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-3" value="B"><span class="quiz-key">B</span>Determines order routing priority</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-3" value="C"><span class="quiz-key">C</span>Calculates real-time position P&amp;L</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-3" value="D"><span class="quiz-key">D</span>Measures execution quality vs. the volume-weighted average market price</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">4. For "what's your biggest weakness," the best approach is:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-interview-4" value="A"><span class="quiz-key">A</span>Claim you have none</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-4" value="B"><span class="quiz-key">B</span>Mention a strength disguised as a weakness</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-4" value="C"><span class="quiz-key">C</span>Name a real weakness with concrete steps you are taking to improve it</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-4" value="D"><span class="quiz-key">D</span>Choose a weakness unrelated to the role</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">5. "How would you detect a stale market data feed?" tests your knowledge of:</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-interview-5" value="A"><span class="quiz-key">A</span>SQL query optimization</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-5" value="B"><span class="quiz-key">B</span>Cloud storage pricing</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-5" value="C"><span class="quiz-key">C</span>Network topology design</label>
+                  <label class="quiz-opt"><input type="radio" name="q-interview-5" value="D"><span class="quiz-key">D</span>Sequence number monitoring, timestamp lag detection, and alerting</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('interview')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-interview"></span>
+              <button class="quiz-reset-btn" id="reset-interview" onclick="resetQuiz('interview')">Try Again</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="slide-nav">
         <button class="nav-btn" id="prev-interview" onclick="nav('interview',-1)" disabled>← Prev</button>
@@ -4267,9 +5164,9 @@ const state = {};   // { deckId: currentIndex }
 
 // ── Deck counts ──
 const COUNTS = {
-  fix: 22, kafka: 8, k8s: 9, marketdata: 8,
-  sql: 7, airflow: 8, linux: 6, python: 8,
-  aws: 5, networking: 4, git: 4, support: 7, interview: 6
+  fix: 23, kafka: 9, k8s: 10, marketdata: 9,
+  sql: 8, airflow: 9, linux: 7, python: 9,
+  aws: 6, networking: 5, git: 5, support: 8, interview: 7
 };
 
 // ── Init ──
@@ -4392,6 +5289,51 @@ async function downloadZip() {
     btn.disabled = false;
   }
 }
+
+
+// ── Quiz ──
+function checkQuiz(id) {
+  const quiz = document.getElementById('quiz-' + id);
+  const questions = quiz.querySelectorAll('.quiz-q');
+  let correct = 0;
+  questions.forEach(q => {
+    const answer = q.dataset.answer;
+    const selected = q.querySelector('input:checked');
+    q.querySelectorAll('.quiz-opt').forEach(opt => {
+      const val = opt.querySelector('input').value;
+      if (val === answer) {
+        if (selected && selected.value === answer) { opt.classList.add('correct'); correct++; }
+        else opt.classList.add('reveal-correct');
+      } else if (selected && val === selected.value) {
+        opt.classList.add('wrong');
+      }
+    });
+  });
+  const lbl = document.getElementById('score-' + id);
+  lbl.textContent = correct + ' / ' + questions.length;
+  lbl.style.color = correct === questions.length ? '#22c55e'
+    : correct >= Math.ceil(questions.length * 0.6) ? '#e8c860' : '#f87171';
+  quiz.querySelector('.quiz-submit-btn').disabled = true;
+  quiz.querySelectorAll('input[type=radio]').forEach(i => i.disabled = true);
+  document.getElementById('reset-' + id).style.display = 'inline-block';
+}
+
+function resetQuiz(id) {
+  const quiz = document.getElementById('quiz-' + id);
+  quiz.querySelectorAll('.quiz-opt').forEach(o =>
+    o.classList.remove('selected','correct','wrong','reveal-correct'));
+  quiz.querySelectorAll('input[type=radio]').forEach(i => { i.checked = false; i.disabled = false; });
+  document.getElementById('score-' + id).textContent = '';
+  document.getElementById('reset-' + id).style.display = 'none';
+  quiz.querySelector('.quiz-submit-btn').disabled = false;
+}
+
+document.addEventListener('change', e => {
+  if (e.target.type !== 'radio' || !e.target.name.startsWith('q-')) return;
+  const nm = e.target.name;
+  document.querySelectorAll('input[name="' + nm + '"]').forEach(r =>
+    r.closest('.quiz-opt').classList.toggle('selected', r.checked));
+});
 
 // ── Keyboard ──
 document.addEventListener('keydown', e => {
