@@ -127,6 +127,35 @@
     border-radius: 8px;
   }
 
+  /* ── Sidebar child (quiz quick-access) ── */
+  .nav-child {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 3px 14px 5px 30px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--border);
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all 0.12s;
+    user-select: none;
+    letter-spacing: 0.03em;
+    margin-bottom: 3px;
+  }
+  .nav-child::before {
+    content: "↳";
+    font-size: 11px;
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+  .nav-child:hover { color: var(--accent); }
+  .nav-child:hover::before { opacity: 1; }
+  .nav-child.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+
   /* ── Main ── */
   main {
     height: 100%;
@@ -630,54 +659,67 @@
       <span class="nav-dot"></span> Market Protocols
       <span class="badge">23</span>
     </div>
+    <div class="nav-child" onclick="showDeckAt('fix',-1)" id="qnav-fix">Knowledge Check</div>
     <div class="nav-item" onclick="showDeck('kafka')"      id="nav-kafka">
       <span class="nav-dot"></span> Kafka
       <span class="badge">9</span>
     </div>
+    <div class="nav-child" onclick="showDeckAt('kafka',-1)" id="qnav-kafka">Knowledge Check</div>
     <div class="nav-item" onclick="showDeck('k8s')"        id="nav-k8s">
       <span class="nav-dot"></span> Kubernetes &amp; Argo
       <span class="badge">10</span>
     </div>
+    <div class="nav-child" onclick="showDeckAt('k8s',-1)" id="qnav-k8s">Knowledge Check</div>
     <div class="nav-item" onclick="showDeck('marketdata')" id="nav-marketdata">
       <span class="nav-dot"></span> Market Data
       <span class="badge">9</span>
     </div>
+    <div class="nav-child" onclick="showDeckAt('marketdata',-1)" id="qnav-marketdata">Knowledge Check</div>
     <div class="nav-item" onclick="showDeck('sql')"        id="nav-sql">
       <span class="nav-dot"></span> SQL
       <span class="badge">8</span>
     </div>
+    <div class="nav-child" onclick="showDeckAt('sql',-1)" id="qnav-sql">Knowledge Check</div>
     <div class="nav-item" onclick="showDeck('airflow')"    id="nav-airflow">
       <span class="nav-dot"></span> Airflow
       <span class="badge">9</span>
     </div>
+    <div class="nav-child" onclick="showDeckAt('airflow',-1)" id="qnav-airflow">Knowledge Check</div>
     <div class="nav-item" onclick="showDeck('linux')"      id="nav-linux">
       <span class="nav-dot"></span> Linux &amp; Systems
       <span class="badge">7</span>
     </div>
+    <div class="nav-child" onclick="showDeckAt('linux',-1)" id="qnav-linux">Knowledge Check</div>
     <div class="nav-item" onclick="showDeck('python')"     id="nav-python">
       <span class="nav-dot"></span> Python &amp; Bash
       <span class="badge">9</span>
     </div>
+    <div class="nav-child" onclick="showDeckAt('python',-1)" id="qnav-python">Knowledge Check</div>
     <div class="nav-item" onclick="showDeck('aws')"        id="nav-aws">
       <span class="nav-dot"></span> AWS
       <span class="badge">6</span>
     </div>
+    <div class="nav-child" onclick="showDeckAt('aws',-1)" id="qnav-aws">Knowledge Check</div>
     <div class="nav-item" onclick="showDeck('networking')" id="nav-networking">
       <span class="nav-dot"></span> Networking
       <span class="badge">5</span>
     </div>
+    <div class="nav-child" onclick="showDeckAt('networking',-1)" id="qnav-networking">Knowledge Check</div>
     <div class="nav-item" onclick="showDeck('git')"        id="nav-git">
       <span class="nav-dot"></span> Git
       <span class="badge">5</span>
     </div>
+    <div class="nav-child" onclick="showDeckAt('git',-1)" id="qnav-git">Knowledge Check</div>
     <div class="nav-item" onclick="showDeck('support')"   id="nav-support">
       <span class="nav-dot"></span> Support &amp; Incidents
       <span class="badge">8</span>
     </div>
+    <div class="nav-child" onclick="showDeckAt('support',-1)" id="qnav-support">Knowledge Check</div>
     <div class="nav-item" onclick="showDeck('interview')" id="nav-interview">
       <span class="nav-dot"></span> Interview Prep
       <span class="badge">7</span>
     </div>
+    <div class="nav-child" onclick="showDeckAt('interview',-1)" id="qnav-interview">Knowledge Check</div>
   </aside>
 
   <!-- ── Main ── -->
@@ -5223,15 +5265,26 @@ function updateNav(id) {
   // dots
   const dots = document.querySelectorAll('#dots-' + id + ' .dot');
   dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+
+  // quiz child nav — highlight when on the last (quiz) slide
+  const qnav = document.getElementById('qnav-' + id);
+  if (qnav) qnav.classList.toggle('active', idx === max);
 }
 
 // ── Show deck ──
 function showDeck(id) {
   document.querySelectorAll('.deck').forEach(d => d.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.nav-child').forEach(n => n.classList.remove('active'));
   document.getElementById('deck-' + id).classList.add('active');
   document.getElementById('nav-' + id).classList.add('active');
   goTo(id, 0);
+}
+
+// ── Jump directly to a specific slide in a deck (supports negative index) ──
+function showDeckAt(id, idx) {
+  showDeck(id);
+  goTo(id, idx < 0 ? COUNTS[id] + idx : idx);
 }
 
 // ── Zoom ──
