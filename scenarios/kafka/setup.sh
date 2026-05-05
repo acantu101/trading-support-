@@ -161,7 +161,7 @@ with open(LOG_FILE, "w") as lf:
 
         available = len(lines)
         if consumed >= available:
-            time.sleep(0.1)
+            time.sleep(1.0)
             continue
 
         # Only process max_poll records per "poll"
@@ -180,8 +180,8 @@ with open(LOG_FILE, "w") as lf:
         with open(OFFSET_FILE, "w") as off:
             off.write(str(consumed))
 
-        # 100ms poll interval -> ~10 msg/sec when max_poll=10
-        time.sleep(0.1)
+        # 1s poll interval -> ~10 msg/sec when max_poll=10
+        time.sleep(1.0)
 
 lf.write(f"consumer stopped. consumed={consumed}\n")
 PYEOF
@@ -260,6 +260,13 @@ fi
 BEOF
 chmod +x "$KAFKA_DIR/bin/kafka-consumer-groups.sh"
 ok "bin/kafka-consumer-groups.sh written and marked executable"
+
+# ── Clear stale state so lag starts from zero on every run ───────────────────
+step "Cleaning up stale state files..."
+rm -f "$KAFKA_DIR/queue/md.equities.raw.jsonl"
+rm -f "$KAFKA_DIR/queue/producer.offset"
+rm -f "$KAFKA_DIR/queue/consumer.offset"
+ok "State cleared — fresh run"
 
 # ── Start producer and consumer in background ────────────────────────────────
 step "Starting producer.py in background..."

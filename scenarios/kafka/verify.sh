@@ -34,7 +34,7 @@ if [ "$POLL_RECORDS" -lt 100 ] 2>/dev/null; then
   grep "max.poll.records" "$CONSUMER_PROPS" | sed 's/^/    /'
   echo ""
   step "Nudge: what throughput does max.poll.records=10 give you if each poll"
-  step "       takes ~100ms? What value would let you keep up with 200 msg/sec?"
+  step "       takes ~1 second? What value would let you keep up with 200 msg/sec?"
   echo ""
   exit 1
 fi

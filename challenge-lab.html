@@ -770,6 +770,23 @@
   .scenario-divider {
     height: 1px; background: var(--border); margin: 14px 0;
   }
+  .scenario-hint-toggle {
+    display: flex; align-items: center; gap: 7px;
+    width: 100%; background: none;
+    border: 1px solid var(--border); border-radius: 4px;
+    color: var(--muted); font-family: var(--mono); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 6px 10px; cursor: pointer; margin-top: 14px;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .scenario-hint-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .scenario-hint-toggle .hint-arrow { transition: transform 0.18s; }
+  .scenario-hint-toggle.open .hint-arrow { transform: rotate(90deg); }
+  .scenario-hint-panel {
+    display: none; padding: 10px 0 4px;
+    border-left: 2px solid var(--border); padding-left: 12px; margin-top: 8px;
+  }
+  .scenario-hint-panel.open { display: block; }
 
   .scenario-terminal-pane { display: flex; flex-direction: column; overflow: hidden; }
 
@@ -6282,13 +6299,6 @@ function openScenario(id) {
       '<span class="scenario-badge diff-' + s.difficulty + '">' + cap + '</span>' +
       '<span class="scenario-badge time-badge">⏱ ' + s.estimated + '</span>' +
     '</div>' +
-    '<div class="scenario-section-lbl">The Situation</div>' +
-    '<div class="scenario-desc-text">' + s.description + '</div>' +
-    '<div class="scenario-section-lbl">Your Objectives</div>' +
-    '<ul class="scenario-obj-list">' +
-      s.objectives.map(function(o){ return '<li>' + o + '</li>'; }).join('') +
-    '</ul>' +
-    '<div class="scenario-divider"></div>' +
     '<div class="scenario-section-lbl">How to Begin</div>' +
     '<div class="scenario-step-label">① Deploy lab to VM — run once in terminal</div>' +
     '<code class="scenario-cmd">' + deployCmd + '</code>' +
@@ -6302,7 +6312,18 @@ function openScenario(id) {
     '<div class="scenario-step-label">④ Verify your fix</div>' +
     '<code class="scenario-cmd">bash ~/trading-support/scenarios/' + id + '/verify.sh</code>' +
     '<div class="scenario-step-label">Reset when done</div>' +
-    '<code class="scenario-cmd">' + resetCmd + '</code>';
+    '<code class="scenario-cmd">' + resetCmd + '</code>' +
+    '<button class="scenario-hint-toggle" onclick="toggleScenarioHint(this)">' +
+      '<span class="hint-arrow">▶</span> Situation &amp; Objectives' +
+    '</button>' +
+    '<div class="scenario-hint-panel">' +
+      '<div class="scenario-section-lbl">The Situation</div>' +
+      '<div class="scenario-desc-text">' + s.description + '</div>' +
+      '<div class="scenario-section-lbl">Your Objectives</div>' +
+      '<ul class="scenario-obj-list">' +
+        s.objectives.map(function(o){ return '<li>' + o + '</li>'; }).join('') +
+      '</ul>' +
+    '</div>';
   document.getElementById('scenario-modal').classList.add('open');
   if (!xterm) initXterm();
   else { try { xtermFit.fit(); } catch(e) {} }
@@ -6310,6 +6331,12 @@ function openScenario(id) {
 
 function closeScenario() {
   document.getElementById('scenario-modal').classList.remove('open');
+}
+
+function toggleScenarioHint(btn) {
+  var panel = btn.nextElementSibling;
+  var open = btn.classList.toggle('open');
+  panel.classList.toggle('open', open);
 }
 
 function initXterm() {
