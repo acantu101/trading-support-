@@ -158,6 +158,30 @@ const SCENARIOS = {
       'Address failover, consistency, and end-of-day reconciliation'
     ]
   },
+  monitoring: {
+    title: 'P99 Latency Cascade — JVM Heap Root Cause',
+    deck: 'Monitoring', difficulty: 'intermediate', estimated: '20 min',
+    description: 'PagerDuty fired four alarms within 90 seconds: order router P99 latency 4800ms, Kafka consumer lag 1900 messages, JVM heap 91%, and error rate 4.8%. The trading desk is seeing slow order acknowledgements. Your job is to determine the root cause from the cascade and identify the correct mitigation.',
+    objectives: [
+      'Read the PagerDuty alert and identify all co-firing alarms',
+      'Determine breach order from the CloudWatch metrics timeline',
+      'Identify the root cause metric vs. downstream cascade effects',
+      'Propose the correct mitigation: restart pod, increase heap, or fix the leak',
+      'Draft a post-incident summary with root cause, blast radius, and fix'
+    ]
+  },
+  java: {
+    title: 'Risk Engine JVM Triage — Stack Trace + GC + Deadlock',
+    deck: 'Java / JVM', difficulty: 'intermediate', estimated: '25 min',
+    description: 'The risk engine has three simultaneous problems logged at 09:31: (1) an NPE crash in the order router with a multi-level "Caused by:" chain, (2) a 4.8-second Full GC pause in the position service, and (3) a deadlock in the risk calculation thread. Analyse each artifact and identify the root cause of each.',
+    objectives: [
+      'Read the stack trace and identify the real root cause via the "Caused by:" chain',
+      'Parse the GC log and find the stop-the-world event and its trigger',
+      'Read the thread dump and identify the two deadlocked threads and the lock cycle',
+      'For each problem: state the immediate mitigation and the permanent fix',
+      'Explain which JVM flag would have written a heap dump on the OOM event'
+    ]
+  },
   darkpool: {
     title: 'ATS TRF Reporting Lag — Compliance Alert',
     deck: 'Dark Pools', difficulty: 'intermediate', estimated: '25 min',
@@ -286,5 +310,23 @@ const SCENARIO_LAB = {
       'Find the misconfigured value: cat ~/trading-support/darkpool/config/trf-reporter.conf — the comment is a clue'
     ],
     tools: ['trf-status']
+  },
+  monitoring: {
+    first_steps: [
+      'Read the PagerDuty alert: cat ~/trading-support/monitoring/data/pagerduty_alert.json',
+      'Check which alarms are co-firing and note the exact timestamps — which metric breached FIRST?',
+      'Read the metrics snapshot: cat ~/trading-support/monitoring/data/cloudwatch_metrics.json — trace the cascade order'
+    ],
+    tools: [],
+    hint: 'The breach order is the answer. Sort the alarms by their fire timestamp — the first metric to breach is the root cause. Everything else is a downstream effect of that one failure.'
+  },
+  java: {
+    first_steps: [
+      'Read the stack trace: cat ~/trading-support/java/logs/order_router_crash.log — find the "Caused by:" chain',
+      'Check the GC log: cat ~/trading-support/java/logs/position_service_gc.log — identify the stop-the-world event',
+      'Read the thread dump: cat ~/trading-support/java/dumps/risk_engine_threaddump.txt — look for the DEADLOCK DETECTED section'
+    ],
+    tools: [],
+    hint: 'For stack traces: always read the "Caused by:" blocks bottom-up — the deepest one is the real root cause. For GC logs: look for "Pause Full" entries — the millisecond value tells you how long all threads were frozen.'
   }
 };
