@@ -1,6 +1,6 @@
 #!/bin/bash
-# Run this from Windows Git Bash to deploy scenarios to the drw VM:
-#   bash trading-support/scenarios/deploy.sh
+# Run this from Windows Git Bash to deploy HTML lab scenarios to the VM:
+#   bash trading-support/scenarios/html/deploy.sh
 VM_USER="acm"
 VM_HOST="127.0.0.1"
 VM_PORT="2222"
@@ -8,8 +8,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "Deploying Trading Support Scenario Lab to ${VM_USER}@${VM_HOST}:${VM_PORT}..."
 
-# Copy all scenario files
-scp -P "$VM_PORT" -o StrictHostKeyChecking=no -r "$SCRIPT_DIR" "${VM_USER}@${VM_HOST}:~/trading-support/scenarios"
+# Copy scenario contents (trailing slash = copy contents, not the directory itself)
+scp -P "$VM_PORT" -o StrictHostKeyChecking=no -r "$SCRIPT_DIR/" "${VM_USER}@${VM_HOST}:~/trading-support/scenarios/"
 
 # Make all scripts executable
 ssh -p "$VM_PORT" -o StrictHostKeyChecking=no "${VM_USER}@${VM_HOST}" '

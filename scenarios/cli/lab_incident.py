@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Support Engineer Challenge Lab — DRW-Style Trading Incident
+Support Engineer Challenge Lab — HFT-Style Trading Incident
 ============================================================
 A realistic market-open cascade failure modelled on the skills tested in the
-DRW Application Support Engineer role (equities / data pipelines / order routing).
+HFT Application Support Engineer role (equities / data pipelines / order routing).
 
 Technologies exercised: Kafka, FIX protocol, Kubernetes, Argo Workflows,
                         HDF5 tick data, AWS CloudWatch, Java stack traces,
@@ -111,18 +111,18 @@ def _write_risk_engine_java_log():
 2026-05-04 09:30:06.999 INFO  [RiskEngine    ] Market open received — enabling live risk checks
 2026-05-04 09:30:07.002 ERROR [PriceValidator] Null reference price for symbol NVTK
 java.lang.NullPointerException: Cannot invoke "Double.doubleValue()" because "refPrice" is null
-        at com.drw.risk.PriceValidator.validatePrice(PriceValidator.java:142)
-        at com.drw.risk.RiskCheckService.runPreTradeChecks(RiskCheckService.java:87)
-        at com.drw.risk.RiskEngine.onOrder(RiskEngine.java:203)
-        at com.drw.oms.OrderRouter.routeOrder(OrderRouter.java:55)
+        at com.hft.risk.PriceValidator.validatePrice(PriceValidator.java:142)
+        at com.hft.risk.RiskCheckService.runPreTradeChecks(RiskCheckService.java:87)
+        at com.hft.risk.RiskEngine.onOrder(RiskEngine.java:203)
+        at com.hft.oms.OrderRouter.routeOrder(OrderRouter.java:55)
         at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
 
 2026-05-04 09:30:07.003 ERROR [PriceValidator] Null reference price for symbol RDDT
 java.lang.NullPointerException: Cannot invoke "Double.doubleValue()" because "refPrice" is null
-        at com.drw.risk.PriceValidator.validatePrice(PriceValidator.java:142)
-        at com.drw.risk.RiskCheckService.runPreTradeChecks(RiskCheckService.java:87)
-        at com.drw.risk.RiskEngine.onOrder(RiskEngine.java:203)
-        at com.drw.oms.OrderRouter.routeOrder(OrderRouter.java:55)
+        at com.hft.risk.PriceValidator.validatePrice(PriceValidator.java:142)
+        at com.hft.risk.RiskCheckService.runPreTradeChecks(RiskCheckService.java:87)
+        at com.hft.risk.RiskEngine.onOrder(RiskEngine.java:203)
+        at com.hft.oms.OrderRouter.routeOrder(OrderRouter.java:55)
 
 2026-05-04 09:30:07.004 FATAL [RiskEngine    ] Uncaught exception in order handler thread — shutting down
 2026-05-04 09:30:07.005 INFO  [RiskEngine    ] Flushing in-flight orders to dead-letter queue...
@@ -267,7 +267,7 @@ Name:             risk-engine-7f8b9d-x4pq2
 Namespace:        trading
 Node:             node-3 / 10.0.1.43
 Status:           Running (CrashLoopBackOff)
-Image:            registry.drw.internal/risk-engine:v4.17.2
+Image:            registry.hft.internal/risk-engine:v4.17.2
 Java Version:     17.0.10 (Eclipse Temurin)
 
 Limits:
@@ -322,7 +322,7 @@ spec:
   templates:
   - name: backfill-ticks
     container:
-      image: registry.drw.internal/hdf5-backfill:v2.3.1
+      image: registry.hft.internal/hdf5-backfill:v2.3.1
       command: [python3, backfill.py, --date, "2026-05-04", --symbols, ALL]
       resources:
         limits:
@@ -335,7 +335,7 @@ spec:
       - name: OUTPUT_PATH
         value: /data/ticks/2026-05-04.h5
       - name: SOURCE_BUCKET
-        value: s3://drw-market-data-prod/equities/ticks/
+        value: s3://hft-market-data-prod/equities/ticks/
 
 status:
   phase: Failed
@@ -364,7 +364,7 @@ def _write_cloudwatch_alarms():
                 "StateValue": "ALARM",
                 "StateReason": "Threshold Crossed: 1 data point (847ms) > 200ms",
                 "MetricName": "OrderRoutingLatency",
-                "Namespace": "DRW/Trading",
+                "Namespace": "HFT/Trading",
                 "Statistic": "p99",
                 "Threshold": 200.0,
                 "ActualValue": 847.0,
@@ -379,7 +379,7 @@ def _write_cloudwatch_alarms():
                 "StateValue": "ALARM",
                 "StateReason": "Threshold Crossed: lag=51234 > 10000",
                 "MetricName": "KafkaConsumerLag",
-                "Namespace": "DRW/Kafka",
+                "Namespace": "HFT/Kafka",
                 "Threshold": 10000,
                 "ActualValue": 51234,
                 "StateUpdatedTimestamp": "2026-05-04T09:30:15Z",
@@ -391,7 +391,7 @@ def _write_cloudwatch_alarms():
                 "StateValue": "ALARM",
                 "StateReason": "CrashLoopBackOff — 5 restarts in 4m32s",
                 "MetricName": "PodRestartCount",
-                "Namespace": "DRW/Kubernetes",
+                "Namespace": "HFT/Kubernetes",
                 "Threshold": 2,
                 "ActualValue": 5,
                 "StateUpdatedTimestamp": "2026-05-04T09:30:09Z"
@@ -402,7 +402,7 @@ def _write_cloudwatch_alarms():
                 "StateValue": "ALARM",
                 "StateReason": "Fill rate = 0% (0/14 orders filled since 09:30:03)",
                 "MetricName": "FillRate",
-                "Namespace": "DRW/Trading",
+                "Namespace": "HFT/Trading",
                 "Threshold": 80.0,
                 "ActualValue": 0.0,
                 "StateUpdatedTimestamp": "2026-05-04T09:30:20Z"
@@ -448,7 +448,7 @@ Root cause: memory limit 512Mi is too low for --symbols ALL (~3,849 symbols × 1
 Fix:        Resubmit the workflow with memory=2Gi.
 
 Expected output path:  /data/ticks/2026-05-04.h5
-S3 source bucket:      s3://drw-market-data-prod/equities/ticks/2026-05-04/
+S3 source bucket:      s3://hft-market-data-prod/equities/ticks/2026-05-04/
 
 Command to resubmit (once you have kubectl/argo access):
   argo submit /argo/workflows/hdf5-tick-backfill.yaml \\
@@ -952,7 +952,7 @@ def launch_scenario_99():
 # ══════════════════════════════════════════════
 
 SCENARIO_MAP = {
-    1:  (launch_scenario_1,  "TI-01  09:30 cascade — Kafka→HDF5→risk→FIX→positions (DRW-style)"),
+    1:  (launch_scenario_1,  "TI-01  09:30 cascade — Kafka→HDF5→risk→FIX→positions (HFT-style)"),
     99: (launch_scenario_99, "       same as TI-01"),
 }
 

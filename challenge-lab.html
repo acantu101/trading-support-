@@ -102,6 +102,16 @@
       <span class="badge">9</span>
     </div>
     <div class="nav-child" onclick="showDeckAt('darkpool',-1)" id="qnav-darkpool">Knowledge Check</div>
+    <div class="nav-item" onclick="showDeck('monitoring')" id="nav-monitoring">
+      <span class="nav-dot"></span> Monitoring
+      <span class="badge">9</span>
+    </div>
+    <div class="nav-child" onclick="showDeckAt('monitoring',-1)" id="qnav-monitoring">Knowledge Check</div>
+    <div class="nav-item" onclick="showDeck('java')" id="nav-java">
+      <span class="nav-dot"></span> Java / JVM
+      <span class="badge">8</span>
+    </div>
+    <div class="nav-child" onclick="showDeckAt('java',-1)" id="qnav-java">Knowledge Check</div>
   </aside>
 
   <!-- ── Main ── -->
@@ -4328,7 +4338,7 @@ If unresolved after 20 min → page @senior-oncall</div>
         <!-- Interview slide 1: App Support — Questions they'll ask you -->
         <div class="slide" id="interview-0">
           <h2>Application Support Engineer — What They'll Ask You</h2>
-          <p style="font-size:0.82em;color:var(--muted);margin:-8px 0 14px">Based on DRW posting ($130k–$165k, Greenwich CT) — Unified Platform Support, L1/L2, FIX + native protocols, Linux, Python, AWS</p>
+          <p style="font-size:0.82em;color:var(--muted);margin:-8px 0 14px">Based on HFT posting ($130k–$165k, Greenwich CT) — Unified Platform Support, L1/L2, FIX + native protocols, Linux, Python, AWS</p>
           <div class="cols">
             <div>
               <h3>Technical</h3>
@@ -4352,7 +4362,7 @@ If unresolved after 20 min → page @senior-oncall</div>
                 <li>"Tell me about a process you improved or documented that saved future toil." <em style="color:var(--muted);font-size:0.85em">→ runbook, automation, alerting</em></li>
               </ul>
               <div class="tip">
-                DRW handles 2–10 user support requests daily plus pipeline monitoring. Frame your answers around high-stakes, time-pressured triage — not helpdesk ticket volume.
+                HFT handles 2–10 user support requests daily plus pipeline monitoring. Frame your answers around high-stakes, time-pressured triage — not helpdesk ticket volume.
               </div>
             </div>
           </div>
@@ -4361,7 +4371,7 @@ If unresolved after 20 min → page @senior-oncall</div>
         <!-- Interview slide 2: App Support — Questions you ask them -->
         <div class="slide" id="interview-1">
           <h2>Application Support Engineer — Questions to Ask Them</h2>
-          <p style="font-size:0.82em;color:var(--muted);margin:-8px 0 14px">Ask these to show depth and evaluate fit — especially for DRW's Unified Platform Support role</p>
+          <p style="font-size:0.82em;color:var(--muted);margin:-8px 0 14px">Ask these to show depth and evaluate fit — especially for HFT's Unified Platform Support role</p>
           <div class="cols">
             <div>
               <h3>Role &amp; Team</h3>
@@ -4383,7 +4393,7 @@ If unresolved after 20 min → page @senior-oncall</div>
                 <li>"What does success look like in the first 90 days for someone in this role?"</li>
               </ul>
               <div class="note">
-                DRW is a proprietary trading firm — avoid asking about the trading strategies. Focus questions on engineering depth, tooling, and team culture.
+                HFT is a proprietary trading firm — avoid asking about the trading strategies. Focus questions on engineering depth, tooling, and team culture.
               </div>
             </div>
           </div>
@@ -4918,6 +4928,657 @@ If unresolved after 20 min → page @senior-oncall</div>
       </div>
     </div>
 
+    <!-- ════════════════ MONITORING & OBSERVABILITY ════════════════ -->
+    <div class="deck" id="deck-monitoring">
+      <div class="deck-bar">
+        <div class="deck-info">
+          <span class="deck-icon">📊</span>
+          <div>
+            <div class="deck-label">Monitoring &amp; Observability</div>
+            <div class="deck-desc">Latency percentiles, CloudWatch, Prometheus/Grafana, alert triage, trading KPIs</div>
+          </div>
+        </div>
+        <div class="deck-meta">
+          <div class="kbd-hint"><kbd>←</kbd><kbd>→</kbd> navigate</div>
+          <div class="deck-counter" id="ctr-monitoring"><strong>1</strong> / 9</div>
+        </div>
+      </div>
+      <div class="slides-wrap" id="slides-monitoring">
+
+        <!-- ── MON1 ── -->
+        <div class="slide active">
+          <div class="sl-num">MONITORING · SLIDE 1 / 9</div>
+          <div class="sl-title">What to Monitor in a Trading System</div>
+          <div class="sl-sub">Alert on symptoms first — cause metrics are for root cause analysis, not paging</div>
+          <div class="sl-rule"></div>
+          <div class="cols">
+            <div class="card">
+              <h3>Symptom Metrics — Always Alert</h3>
+              <ul>
+                <li><strong>FIX session connected = 0</strong> — trading is DOWN, page immediately</li>
+                <li><strong>Order p99 latency &gt; SLA</strong> — SLA breach, investigate now</li>
+                <li><strong>Error rate spike</strong> — orders failing, traders impacted</li>
+                <li><strong>Fill count = 0</strong> — no fills for &gt;N minutes = pipeline broken</li>
+                <li><strong>Feed staleness &gt; threshold</strong> — stale quotes reaching algos</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Cause Metrics — Root Cause Analysis</h3>
+              <ul>
+                <li><strong>JVM heap %</strong> — &gt;85% = GC pressure imminent</li>
+                <li><strong>Kafka consumer lag</strong> — consumer falling behind producer</li>
+                <li><strong>CPU utilisation</strong> — sustained &gt;90% = runaway or undersized</li>
+                <li><strong>DB query p99</strong> — slow queries = missing index or lock contention</li>
+                <li><strong>Disk used %</strong> — logs fill disk fast; monitor and rotate</li>
+              </ul>
+            </div>
+          </div>
+          <div class="tip"><strong>Key principle:</strong> Symptoms are what traders feel. Causes are what engineers fix. Always alert on symptoms — cause metrics help you find the root cause once you're already investigating.</div>
+        </div>
+
+        <!-- ── MON2 ── -->
+        <div class="slide">
+          <div class="sl-num">MONITORING · SLIDE 2 / 9</div>
+          <div class="sl-title">Latency Percentiles — p50 / p95 / p99 / p99.9</div>
+          <div class="sl-sub">Why averages lie, and what each percentile actually tells you</div>
+          <div class="sl-rule"></div>
+          <table>
+            <tr><th>Percentile</th><th>Meaning</th><th>When it matters</th></tr>
+            <tr><td><strong>p50 (median)</strong></td><td>Half of requests faster than this</td><td>"Typical" experience — baseline health check</td></tr>
+            <tr><td><strong>p95</strong></td><td>95% faster — 1 in 20 slower</td><td>Early warning before SLA breach</td></tr>
+            <tr><td><strong>p99</strong></td><td>99% faster — 1 in 100 slower</td><td><strong>SLA target for most trading systems (e.g. &lt;200ms)</strong></td></tr>
+            <tr><td><strong>p99.9</strong></td><td>999 in 1000 faster</td><td>Catches GC pauses, lock timeouts, outlier events</td></tr>
+          </table>
+          <div class="warn" style="margin-top:14px"><strong>Average is misleading for trading:</strong> During a GC pause period, average latency might look like 80ms but p99 = 4000ms. At 1000 orders/min, that means 10 orders every minute are taking 4 seconds — causing timeout rejections and stale risk positions.</div>
+          <div class="cols" style="margin-top:14px">
+            <div class="card">
+              <h3>Bimodal Distribution (GC / Lock contention)</h3>
+              <ul>
+                <li>Most requests: fast (~45ms)</li>
+                <li>Some requests: very slow (800–4800ms)</li>
+                <li>p50 looks fine → p99 is alarming = classic GC stop-the-world signature</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>CloudWatch / Prometheus config</h3>
+              <ul>
+                <li>Alert on <code>p99 &gt; 200ms for 2 consecutive minutes</code></li>
+                <li>Not on average — hides the outliers that matter</li>
+                <li>Histogram metric type in Prometheus gives bucket counts for quantile calculation</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── MON3 ── -->
+        <div class="slide">
+          <div class="sl-num">MONITORING · SLIDE 3 / 9</div>
+          <div class="sl-title">CloudWatch Metrics &amp; Dashboards</div>
+          <div class="sl-sub">Find the metric that breached FIRST — that is your root cause</div>
+          <div class="sl-rule"></div>
+          <div class="cols">
+            <div class="card">
+              <h3>Reading a Dashboard Under Incident</h3>
+              <ul>
+                <li><strong>Which metric breached first?</strong> Usually the root cause</li>
+                <li><strong>Cascade direction:</strong> one service's latency → upstream timeouts → their p99 spikes</li>
+                <li><strong>Recovery order:</strong> metrics recover in reverse breach order</li>
+                <li>Look at the <em>exact timestamp</em> each panel turns red — breach order tells the story</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>CloudWatch Alarm Config</h3>
+              <ul>
+                <li><strong>Threshold:</strong> e.g. p99 &gt; 200ms</li>
+                <li><strong>Evaluation periods:</strong> N consecutive breaches avoids flapping</li>
+                <li><strong>Treat missing data as:</strong> breaching for critical services</li>
+                <li><strong>Actions:</strong> SNS → PagerDuty → on-call page</li>
+                <li>Every alarm must include a <strong>runbook URL</strong> in the description</li>
+              </ul>
+            </div>
+          </div>
+          <pre style="margin-top:14px"><span class="cm"># Example cascade — breach order reveals root cause</span>
+<span class="cm"># 09:44:58  jvm_heap_used_pct    = 91%   ← FIRST — root cause</span>
+<span class="cm"># 09:45:12  kafka_consumer_lag   = 1900  ← GC pauses → threads can't poll</span>
+<span class="cm"># 09:45:48  order_router_p99_ms  = 4821  ← waiting on risk checks</span>
+<span class="cm"># 09:46:02  error_rate_pct       = 4.8%  ← upstream timeouts</span></pre>
+        </div>
+
+        <!-- ── MON4 ── -->
+        <div class="slide">
+          <div class="sl-num">MONITORING · SLIDE 4 / 9</div>
+          <div class="sl-title">Prometheus &amp; Grafana Basics</div>
+          <div class="sl-sub">Metric types and PromQL patterns you'll see in every trading dashboard</div>
+          <div class="sl-rule"></div>
+          <table>
+            <tr><th>Type</th><th>Direction</th><th>Use for</th><th>PromQL pattern</th></tr>
+            <tr><td><strong>Counter</strong></td><td>Always increases (resets on restart)</td><td>Total fills, total errors, bytes in</td><td><code>rate(metric[5m])</code></td></tr>
+            <tr><td><strong>Gauge</strong></td><td>Up or down</td><td>Heap %, consumer lag, active connections</td><td><code>metric</code> or <code>max(metric)</code></td></tr>
+            <tr><td><strong>Histogram</strong></td><td>Bucketed observations</td><td>Request latency, message size</td><td><code>histogram_quantile(0.99, rate(metric_bucket[5m]))</code></td></tr>
+          </table>
+          <pre style="margin-top:14px"><span class="cm"># Key PromQL queries for a trading system</span>
+
+<span class="cm"># p99 order latency from histogram</span>
+<span class="fn">histogram_quantile</span>(0.99, rate(order_router_request_duration_seconds_bucket[5m]))
+
+<span class="cm"># Total Kafka lag across all partitions in a group</span>
+<span class="fn">sum</span>(kafka_consumer_lag_records{group=<span class="str">"risk-engine-group"</span>})
+
+<span class="cm"># Fill rate per second (5-minute window)</span>
+<span class="fn">rate</span>(trade_fills_total{status=<span class="str">"filled"</span>}[5m])
+
+<span class="cm"># FIX sessions that are DOWN</span>
+fix_session_connected == 0
+
+<span class="cm"># JVM heap in GB</span>
+jvm_memory_used_bytes{area=<span class="str">"heap"</span>} / 1024 / 1024 / 1024</pre>
+        </div>
+
+        <!-- ── MON5 ── -->
+        <div class="slide">
+          <div class="sl-num">MONITORING · SLIDE 5 / 9</div>
+          <div class="sl-title">Alert Triage Workflow — 8 Steps</div>
+          <div class="sl-sub">From PagerDuty page to resolved — the exact sequence support engineers follow</div>
+          <div class="sl-rule"></div>
+          <table>
+            <tr><th>Step</th><th>Action</th><th>Time target</th></tr>
+            <tr><td>1</td><td><strong>Acknowledge</strong> the alert in PagerDuty — signals the team it is being worked</td><td>&lt;5 min</td></tr>
+            <tr><td>2</td><td><strong>Read the alert:</strong> which metric, which service, when did it fire, what else is firing?</td><td>30 sec</td></tr>
+            <tr><td>3</td><td><strong>Check related alarms</strong> — which fired FIRST? That points to root cause</td><td>1 min</td></tr>
+            <tr><td>4</td><td><strong>Check logs</strong> at the exact time window — grep for GC, OOM, Exception, ERROR</td><td>2–3 min</td></tr>
+            <tr><td>5</td><td><strong>Assess blast radius</strong> — how many traders/orders affected? Is live trading impacted?</td><td>1 min</td></tr>
+            <tr><td>6</td><td><strong>Mitigate:</strong> restart pod, increase heap, clear queue — fastest safe action first</td><td>varies</td></tr>
+            <tr><td>7</td><td><strong>Verify recovery:</strong> watch dashboard until all metrics return to normal</td><td>2–5 min</td></tr>
+            <tr><td>8</td><td><strong>Post-incident summary:</strong> what fired, what you found, what you did, permanent fix ticket</td><td>after market</td></tr>
+          </table>
+          <div class="tip"><strong>Communication template:</strong> "INC-001 UPDATE: Root cause identified as JVM heap pressure on risk-engine. Restarted pod at 09:52. P99 recovering, consumer lag clearing. Monitoring."</div>
+        </div>
+
+        <!-- ── MON6 ── -->
+        <div class="slide">
+          <div class="sl-num">MONITORING · SLIDE 6 / 9</div>
+          <div class="sl-title">Trading System KPIs &amp; Alert Thresholds</div>
+          <div class="sl-sub">Know the numbers — interviewers ask "what would you alert on for a trading system?"</div>
+          <div class="sl-rule"></div>
+          <table>
+            <tr><th>Category</th><th>Metric</th><th>Warn</th><th>Critical</th></tr>
+            <tr><td rowspan="3"><strong>Order Routing</strong></td><td>Order p99 latency</td><td>100ms</td><td>200ms</td></tr>
+            <tr><td>Order error rate</td><td>0.5%</td><td>2.0%</td></tr>
+            <tr><td>FIX session connected</td><td>—</td><td>0 = page immediately</td></tr>
+            <tr><td rowspan="2"><strong>Market Data</strong></td><td>Feed gap count</td><td>1/min</td><td>5/min</td></tr>
+            <tr><td>Book staleness</td><td>5s</td><td>30s</td></tr>
+            <tr><td rowspan="2"><strong>Risk &amp; Position</strong></td><td>Position calc lag</td><td>100ms</td><td>500ms</td></tr>
+            <tr><td>Margin utilisation</td><td>80%</td><td>95%</td></tr>
+            <tr><td rowspan="4"><strong>Infrastructure</strong></td><td>JVM heap used</td><td>75%</td><td>85%</td></tr>
+            <tr><td>Kafka consumer lag</td><td>100 msgs</td><td>500 msgs/partition</td></tr>
+            <tr><td>DB query p99</td><td>500ms</td><td>2000ms</td></tr>
+            <tr><td>Disk used</td><td>75%</td><td>90%</td></tr>
+          </table>
+        </div>
+
+        <!-- ── MON7 ── -->
+        <div class="slide">
+          <div class="sl-num">MONITORING · SLIDE 7 / 9</div>
+          <div class="sl-title">Cascade Root Cause Analysis</div>
+          <div class="sl-sub">One root cause usually explains all the alarms — find it by breach order</div>
+          <div class="sl-rule"></div>
+          <div class="cols">
+            <div class="card">
+              <h3>JVM Heap → Full Cascade Example</h3>
+              <ul>
+                <li>JVM heap crosses 85% → GC running constantly</li>
+                <li>GC stop-the-world → all threads frozen → consumer can't poll Kafka</li>
+                <li>Kafka consumer lag grows → risk engine not getting fills</li>
+                <li>Risk engine uses stale positions → downstream timeouts</li>
+                <li>Order router p99 spikes → error rate rises</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Analysis Checklist</h3>
+              <ul>
+                <li><strong>Breach order:</strong> sort alarms by fire time — first breach = root cause candidate</li>
+                <li><strong>Common root causes:</strong> JVM heap, pod OOMKilled, Kafka partition offline, DB lock, disk full</li>
+                <li><strong>Deployment correlation:</strong> anything deploy in the 30 min before the incident?</li>
+                <li><strong>Recovery validation:</strong> metrics recover in reverse cascade order</li>
+              </ul>
+            </div>
+          </div>
+          <div class="flow" style="margin-top:14px;flex-wrap:wrap;gap:6px">
+            <div class="flow-box" style="background:rgba(220,50,50,0.1);border-color:rgba(220,50,50,0.4)">JVM Heap 91%<br><small>ROOT CAUSE</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box">GC STW Pause<br><small>4.8s freeze</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box">Kafka Lag 1900<br><small>can't consume</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box">Risk Engine Stale<br><small>cached positions</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box" style="background:rgba(220,50,50,0.1);border-color:rgba(220,50,50,0.4)">Orders Timeout<br><small>SYMPTOM</small></div>
+          </div>
+        </div>
+
+        <!-- ── MON8 ── -->
+        <div class="slide">
+          <div class="sl-num">MONITORING · SLIDE 8 / 9</div>
+          <div class="sl-title">Monitoring Quick Reference</div>
+          <div class="sl-sub">Commands for your first 30 minutes on-call</div>
+          <div class="sl-rule"></div>
+          <div class="cols">
+            <div class="card">
+              <h3>Kubernetes / Pod Health</h3>
+              <pre style="margin-top:8px"><span class="cm"># Pod status</span>
+<span class="fn">kubectl</span> get pods -n trading-ns
+<span class="cm"># Crash logs</span>
+<span class="fn">kubectl</span> logs --previous &lt;pod&gt; -n trading-ns
+<span class="cm"># Resource usage</span>
+<span class="fn">kubectl</span> top pods -n trading-ns
+<span class="cm"># Rolling restart</span>
+<span class="fn">kubectl</span> rollout restart deployment/risk-engine -n trading-ns</pre>
+            </div>
+            <div class="card">
+              <h3>Kafka Lag</h3>
+              <pre style="margin-top:8px"><span class="cm"># Describe consumer group lag</span>
+<span class="fn">kafka-consumer-groups.sh</span> \
+  --bootstrap-server broker:9092 \
+  --describe --group risk-engine-group
+
+<span class="cm"># CONSUMER-ID "-" = pod is dead</span>
+<span class="cm"># LAG growing = consumer falling behind</span></pre>
+            </div>
+          </div>
+          <pre style="margin-top:10px"><span class="cm"># JVM heap snapshot (if jcmd is available on the pod)</span>
+<span class="fn">jcmd</span> &lt;pid&gt; VM.flags       <span class="cm"># see -Xmx, -Xms</span>
+<span class="fn">jcmd</span> &lt;pid&gt; GC.heap_info   <span class="cm"># current heap usage</span>
+<span class="fn">jstack</span> &lt;pid&gt;              <span class="cm"># thread dump</span>
+
+<span class="cm"># CloudWatch: active alarms via AWS CLI</span>
+<span class="fn">aws</span> cloudwatch describe-alarms --state-value ALARM \
+  --query <span class="str">'MetricAlarms[*].{Name:AlarmName,Metric:MetricName}'</span></pre>
+        </div>
+
+        <!-- ── QUIZ ── -->
+        <div class="slide">
+          <div class="sl-num">MONITORING · SLIDE 9 / 9</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Monitoring &amp; Observability — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-monitoring">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">1. The order router p99 latency is 4800ms but the average is 90ms. What does this most likely indicate?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-1" value="A"><span class="quiz-key">A</span>The service is healthy — average is under SLA</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-1" value="B"><span class="quiz-key">B</span>A network partition between exchanges</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-1" value="C"><span class="quiz-key">C</span>A bimodal distribution — most requests fast, some hitting GC pauses or lock contention</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-1" value="D"><span class="quiz-key">D</span>The SLA threshold is misconfigured</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="A">
+                <div class="quiz-q-text">2. Four alarms fire in order: (1) JVM heap 91%, (2) Kafka lag 1900, (3) order router p99 4800ms, (4) error rate 4.8%. What is the root cause?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-2" value="A"><span class="quiz-key">A</span>JVM heap pressure — it fired first and caused the cascade</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-2" value="B"><span class="quiz-key">B</span>Kafka consumer lag — the most impactful metric</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-2" value="C"><span class="quiz-key">C</span>Order router latency — directly impacts traders</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-2" value="D"><span class="quiz-key">D</span>Error rate — highest priority alarm</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">3. In Prometheus, what metric type should you use to track total trade fill count?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-3" value="A"><span class="quiz-key">A</span>Gauge</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-3" value="B"><span class="quiz-key">B</span>Counter</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-3" value="C"><span class="quiz-key">C</span>Histogram</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-3" value="D"><span class="quiz-key">D</span>Summary</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">4. A CloudWatch alarm fires. What is the FIRST action before investigating?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-4" value="A"><span class="quiz-key">A</span>Restart the affected pod</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-4" value="B"><span class="quiz-key">B</span>Check the application logs</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-4" value="C"><span class="quiz-key">C</span>Contact the trading desk</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-4" value="D"><span class="quiz-key">D</span>Acknowledge the alert in PagerDuty</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">5. Which PromQL function calculates p99 latency from a histogram metric?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-5" value="A"><span class="quiz-key">A</span>avg(metric)</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-5" value="B"><span class="quiz-key">B</span>quantile(0.99, metric)</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-5" value="C"><span class="quiz-key">C</span>histogram_quantile(0.99, rate(metric_bucket[5m]))</label>
+                  <label class="quiz-opt"><input type="radio" name="q-monitoring-5" value="D"><span class="quiz-key">D</span>percentile(99, metric)</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('monitoring')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-monitoring"></span>
+              <button class="quiz-reset-btn" id="reset-monitoring" onclick="resetQuiz('monitoring')">Try Again</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-nav">
+        <button class="nav-btn" id="prev-monitoring" onclick="nav('monitoring',-1)" disabled>← Prev</button>
+        <div class="dots" id="dots-monitoring"></div>
+        <button class="nav-btn" id="next-monitoring" onclick="nav('monitoring',1)">Next →</button>
+      </div>
+    </div>
+
+    <!-- ════════════════ JAVA / JVM ════════════════ -->
+    <div class="deck" id="deck-java">
+      <div class="deck-bar">
+        <div class="deck-info">
+          <span class="deck-icon">☕</span>
+          <div>
+            <div class="deck-label">Java / JVM</div>
+            <div class="deck-desc">Stack traces, GC analysis, thread dumps, OutOfMemoryError — read logs, no Java install needed</div>
+          </div>
+        </div>
+        <div class="deck-meta">
+          <div class="kbd-hint"><kbd>←</kbd><kbd>→</kbd> navigate</div>
+          <div class="deck-counter" id="ctr-java"><strong>1</strong> / 8</div>
+        </div>
+      </div>
+      <div class="slides-wrap" id="slides-java">
+
+        <!-- ── J1 ── -->
+        <div class="slide active">
+          <div class="sl-num">JAVA · SLIDE 1 / 8</div>
+          <div class="sl-title">JVM Memory Model</div>
+          <div class="sl-sub">Heap, Metaspace, Stack, and Direct Buffers — each has its own OOM type and fix</div>
+          <div class="sl-rule"></div>
+          <div class="cols cols-3">
+            <div class="card">
+              <h3>Heap</h3>
+              <ul>
+                <li>All Java objects live here</li>
+                <li>Managed by GC (Young + Old gen)</li>
+                <li><code>-Xmx</code> = max heap size</li>
+                <li><code>-Xms</code> = initial size (set = <code>-Xmx</code> to avoid resize pauses)</li>
+                <li>OOM: <code>Java heap space</code></li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Metaspace</h3>
+              <ul>
+                <li>Class metadata and bytecode</li>
+                <li>Outside heap (since Java 8)</li>
+                <li><code>-XX:MaxMetaspaceSize</code> limits it</li>
+                <li>Grows on dynamic class loading — proxies, reflection, hot reload</li>
+                <li>OOM: <code>Metaspace</code></li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Stack &amp; Direct</h3>
+              <ul>
+                <li>Stack: one per thread; method calls + local vars</li>
+                <li><code>StackOverflowError</code>: infinite recursion</li>
+                <li>Direct: off-heap NIO ByteBuffers — Kafka, Netty, FIX engines</li>
+                <li><code>-XX:MaxDirectMemorySize</code> controls it</li>
+                <li>OOM: <code>Direct buffer memory</code></li>
+              </ul>
+            </div>
+          </div>
+          <pre style="margin-top:14px"><span class="cm"># Production JVM flags for a latency-sensitive trading service</span>
+java -Xmx8g -Xms8g \
+     -XX:+UseG1GC \
+     -XX:MaxGCPauseMillis=50 \
+     -XX:+HeapDumpOnOutOfMemoryError \
+     -XX:HeapDumpPath=/var/log/dumps/ \
+     -XX:+ExitOnOutOfMemoryError \
+     -jar risk-engine.jar</pre>
+        </div>
+
+        <!-- ── J2 ── -->
+        <div class="slide">
+          <div class="sl-num">JAVA · SLIDE 2 / 8</div>
+          <div class="sl-title">Reading Java Stack Traces</div>
+          <div class="sl-sub">Always start from the last "Caused by:" — that is the real root cause, not the exception at the top</div>
+          <div class="sl-rule"></div>
+          <pre><span class="cm"># Order router NPE during a market data outage</span>
+java.lang.NullPointerException: Cannot invoke <span class="str">"Quote.getBidPrice()"</span> because <span class="str">"quote"</span> is null
+    at com.hft.router.OrderRouter.calculateSlippage(OrderRouter.java:287)  <span class="cm">← crash site</span>
+    at com.hft.router.OrderRouter.routeOrder(OrderRouter.java:142)
+    at com.hft.fix.FIXSessionHandler.onMessage(FIXSessionHandler.java:201)
+    at quickfix.Session.next(Session.java:762)
+
+<span class="kw">Caused by:</span> MarketDataUnavailableException: No quote for symbol AAPL
+    at com.hft.market.MarketDataCache.getQuote(MarketDataCache.java:156)   <span class="cm">← ROOT CAUSE</span>
+    at com.hft.router.OrderRouter.calculateSlippage(OrderRouter.java:284)</pre>
+          <table style="margin-top:14px">
+            <tr><th>Part</th><th>Meaning</th></tr>
+            <tr><td>First line</td><td>Exception type + message — what crashed</td></tr>
+            <tr><td>"at" lines (top)</td><td>Most recent call first — where it crashed</td></tr>
+            <tr><td>"at" lines (bottom)</td><td>Where the code originated (entry point)</td></tr>
+            <tr><td><strong>"Caused by:"</strong></td><td><strong>The underlying exception — ALWAYS start here for root cause</strong></td></tr>
+            <tr><td>Class:line number</td><td>Exact file and line to look at in source code</td></tr>
+            <tr><td>Thread name in brackets</td><td>Which thread crashed — [main-thread], [fix-handler-1], etc.</td></tr>
+          </table>
+          <div class="tip"><strong>Pattern:</strong> Read "Caused by:" blocks from bottom to top — the deepest one is the real root cause. The NPE above is a symptom; the market data outage is the cause.</div>
+        </div>
+
+        <!-- ── J3 ── -->
+        <div class="slide">
+          <div class="sl-num">JAVA · SLIDE 3 / 8</div>
+          <div class="sl-title">GC Types &amp; Concepts</div>
+          <div class="sl-sub">Know which GC events are normal, which are warnings, and which page on-call</div>
+          <div class="sl-rule"></div>
+          <table>
+            <tr><th>GC Event</th><th>Pause</th><th>What it does</th><th>Verdict</th></tr>
+            <tr><td><strong>Young GC (Minor)</strong></td><td>10–40ms</td><td>Clears short-lived objects (Eden space)</td><td>Normal — happens frequently</td></tr>
+            <tr><td><strong>Mixed GC</strong></td><td>50–100ms</td><td>Young + some old generation</td><td>Normal with G1GC</td></tr>
+            <tr><td><strong>Full GC (Major)</strong></td><td><strong>Seconds</strong></td><td>Stop-the-world — all threads frozen, clears everything</td><td><strong>Alert immediately</strong></td></tr>
+            <tr><td><strong>Concurrent Mark</strong></td><td>Near zero</td><td>G1 background marking; not a stop-the-world pause</td><td>Normal</td></tr>
+          </table>
+          <div class="cols" style="margin-top:14px">
+            <div class="card">
+              <h3>G1GC (Default, Java 9+)</h3>
+              <ul>
+                <li><code>-XX:+UseG1GC</code> (default from Java 9)</li>
+                <li><code>-XX:MaxGCPauseMillis=200</code> — target pause (best-effort)</li>
+                <li>Can still Full GC if heap fills faster than it can collect</li>
+                <li>Good up to ~100GB heap</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>ZGC (Java 15+)</h3>
+              <ul>
+                <li><code>-XX:+UseZGC</code></li>
+                <li>Concurrent — pauses &lt;1ms even at 100GB+ heap</li>
+                <li>Ideal for latency-sensitive trading services</li>
+                <li>Higher CPU overhead than G1GC</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── J4 ── -->
+        <div class="slide">
+          <div class="sl-num">JAVA · SLIDE 4 / 8</div>
+          <div class="sl-title">GC Log Analysis</div>
+          <div class="sl-sub">Identify stop-the-world events, heap growth trends, and memory leaks from GC logs</div>
+          <div class="sl-rule"></div>
+          <pre><span class="cm"># GC log format: -Xlog:gc* (Java 11+) or -verbose:gc</span>
+<span class="cm"># Pattern: [timestamp][gc] GC(N) Type HeapBefore->HeapAfter(Max) PauseMs</span>
+
+[09:31:45][gc] GC(8)  Pause Young (Prepare Mixed)   2304M->2198M(4096M)  38.1ms   <span class="cm">← normal</span>
+[09:31:45][gc] GC(9)  Pause Full (System.gc())       3891M->312M(4096M) 4821.3ms   <span class="cm">← STOP THE WORLD ← alert</span></pre>
+          <div class="cols" style="margin-top:14px">
+            <div class="card">
+              <h3>What to look for</h3>
+              <ul>
+                <li><strong>Pause Full / Pause Old</strong> — stop-the-world; any pause &gt;1s = alert</li>
+                <li><strong>Heap baseline rising across cycles</strong> — memory leak pattern (e.g. 498M → 956M → 1701M after each GC)</li>
+                <li><strong>Heap nearly full before GC</strong> — e.g. 3891M/4096M = 95% = OOM imminent</li>
+                <li><strong>System.gc() in GC type</strong> — explicit call in code; remove it</li>
+                <li><strong>GC runs every &lt;1s</strong> — GC overhead too high; may trigger GC overhead OOM</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Heap growth = leak signature</h3>
+              <ul>
+                <li>GC(0): 512M → 498M (after GC)</li>
+                <li>GC(2): 1024M → 956M (after GC)</li>
+                <li>GC(6): 1792M → 1701M (after GC)</li>
+                <li>GC(8): 2304M → 2198M (after GC)</li>
+                <li>→ baseline rising = unbounded accumulation = memory leak</li>
+                <li>Fix: heap dump → Eclipse MAT / jmap → find the dominator</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── J5 ── -->
+        <div class="slide">
+          <div class="sl-num">JAVA · SLIDE 5 / 8</div>
+          <div class="sl-title">Thread Dump Analysis</div>
+          <div class="sl-sub">Identify deadlocks and blocked threads — captured safely with kill -3 or jstack</div>
+          <div class="sl-rule"></div>
+          <pre><span class="cm"># JVM prints "DEADLOCK DETECTED" header automatically when it finds a cycle</span>
+Java-level deadlock:
+  <span class="str">"position-update-thread"</span>  waiting for PositionCache  — held by <span class="str">"risk-calc-thread"</span>
+  <span class="str">"risk-calc-thread"</span>         waiting for OrderBook      — held by <span class="str">"position-update-thread"</span>
+
+Thread <span class="str">"position-update-thread"</span>: BLOCKED
+    - locked OrderBook       <span class="cm">← holds this</span>
+    - waiting to lock PositionCache
+
+Thread <span class="str">"risk-calc-thread"</span>: BLOCKED
+    - locked PositionCache   <span class="cm">← holds this</span>
+    - waiting to lock OrderBook</pre>
+          <table style="margin-top:14px">
+            <tr><th>Thread State</th><th>Meaning</th><th>Action</th></tr>
+            <tr><td><strong>RUNNABLE</strong></td><td>Executing or ready to execute</td><td>Normal</td></tr>
+            <tr><td><strong>BLOCKED</strong></td><td>Waiting for a synchronized lock held by another thread</td><td>Find which thread holds it — deadlock candidate</td></tr>
+            <tr><td><strong>WAITING</strong></td><td>Waiting indefinitely — Object.wait(), LockSupport.park()</td><td>Find what it's waiting for</td></tr>
+            <tr><td><strong>TIMED_WAITING</strong></td><td>Waiting with timeout — Thread.sleep(), wait(N)</td><td>Usually normal</td></tr>
+          </table>
+          <div class="warn"><strong>Deadlock fix:</strong> enforce consistent lock ordering — always acquire locks in the same order across all threads. If both threads need Lock1 and Lock2, both must acquire Lock1 first.</div>
+        </div>
+
+        <!-- ── J6 ── -->
+        <div class="slide">
+          <div class="sl-num">JAVA · SLIDE 6 / 8</div>
+          <div class="sl-title">OutOfMemoryError Types</div>
+          <div class="sl-sub">Same exception class, four different memory regions — each has a different fix</div>
+          <div class="sl-rule"></div>
+          <table>
+            <tr><th>OOM Message</th><th>Region</th><th>Common cause</th><th>Fix</th></tr>
+            <tr><td><strong>Java heap space</strong></td><td>Heap</td><td>Objects not being GC'd — unbounded cache, collection without eviction</td><td>Fix the leak (bounded cache, TTL eviction) or increase <code>-Xmx</code></td></tr>
+            <tr><td><strong>Metaspace</strong></td><td>Metaspace</td><td>Too many classes loaded — dynamic proxies, reflection, hot reload in frameworks</td><td><code>-XX:MaxMetaspaceSize=512m</code> or fix the class leak</td></tr>
+            <tr><td><strong>GC overhead limit exceeded</strong></td><td>Heap</td><td>JVM spending &gt;98% CPU in GC, recovering &lt;2% heap per cycle</td><td>Same as heap space — heap nearly full, fix the leak first</td></tr>
+            <tr><td><strong>Direct buffer memory</strong></td><td>Off-heap</td><td>NIO ByteBuffers not released — Kafka consumers, Netty, FIX engines</td><td><code>-XX:MaxDirectMemorySize=1g</code> or fix buffer pooling</td></tr>
+            <tr><td><strong>Unable to create thread</strong></td><td>OS</td><td>Too many Thread objects; OS thread limit hit</td><td>Reduce thread count, increase OS <code>ulimit -u</code></td></tr>
+          </table>
+          <div class="tip"><strong>Heap dump workflow:</strong> <code>-XX:+HeapDumpOnOutOfMemoryError</code> writes a .hprof file on crash. Open with Eclipse MAT or JProfiler — the "Dominator Tree" shows which objects hold the most memory. That is your leak.</div>
+        </div>
+
+        <!-- ── J7 ── -->
+        <div class="slide">
+          <div class="sl-num">JAVA · SLIDE 7 / 8</div>
+          <div class="sl-title">JVM Production Flags &amp; Diagnostic Commands</div>
+          <div class="sl-sub">Commands you use on-call to triage a hanging or crashing JVM-based service</div>
+          <div class="sl-rule"></div>
+          <div class="cols">
+            <div class="card">
+              <h3>Essential JVM Flags</h3>
+              <pre style="margin-top:8px">-Xmx8g -Xms8g           <span class="cm"># equal = no resize pauses</span>
+-XX:+UseG1GC             <span class="cm"># or UseZGC for &lt;1ms pauses</span>
+-XX:MaxGCPauseMillis=50  <span class="cm"># target pause (best-effort)</span>
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/var/log/dumps/
+-XX:+ExitOnOutOfMemoryError  <span class="cm"># crash fast, no GC thrash</span>
+-Xlog:gc*:file=gc.log    <span class="cm"># GC log (Java 11+)</span></pre>
+            </div>
+            <div class="card">
+              <h3>On-Call Diagnostic Commands</h3>
+              <pre style="margin-top:8px"><span class="cm"># Thread dump — safe, no restart needed</span>
+<span class="fn">kill</span> -3 &lt;pid&gt;              <span class="cm"># prints to stdout/log</span>
+<span class="fn">jstack</span> &lt;pid&gt; &gt; dump.txt   <span class="cm"># save to file</span>
+
+<span class="cm"># JVM heap info</span>
+<span class="fn">jcmd</span> &lt;pid&gt; GC.heap_info
+<span class="fn">jcmd</span> &lt;pid&gt; VM.flags
+
+<span class="cm"># Heap dump (live — pauses service)</span>
+<span class="fn">jmap</span> -dump:format=b,file=heap.hprof &lt;pid&gt;
+
+<span class="cm"># List JVM processes</span>
+<span class="fn">jps</span> -v</pre>
+            </div>
+          </div>
+          <div class="note" style="margin-top:10px"><strong>On-call rule:</strong> <code>kill -3</code> (thread dump) is safe and non-disruptive — use any time the service is hanging. <code>jmap</code> heap dump is expensive on large heaps — may pause the process for 30+ seconds. Use only when you already know OOM is the issue.</div>
+        </div>
+
+        <!-- ── QUIZ ── -->
+        <div class="slide">
+          <div class="sl-num">JAVA · SLIDE 8 / 8</div>
+          <div class="sl-title">Knowledge Check</div>
+          <div class="sl-sub">Java / JVM — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
+          <div class="sl-rule"></div>
+          <div id="quiz-java">
+            <div class="quiz-grid">
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">1. A stack trace shows multiple "Caused by:" blocks. Where is the real root cause?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-java-1" value="A"><span class="quiz-key">A</span>The first exception at the top of the trace</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-1" value="B"><span class="quiz-key">B</span>The last (deepest) "Caused by:" block</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-1" value="C"><span class="quiz-key">C</span>The exception with the most "at" lines</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-1" value="D"><span class="quiz-key">D</span>Always the NullPointerException</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="C">
+                <div class="quiz-q-text">2. A GC log shows: "Pause Full (System.gc()) 3891M->312M(4096M) 4821ms". What is the impact on trading?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-java-2" value="A"><span class="quiz-key">A</span>A routine GC event — no impact on latency</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-2" value="B"><span class="quiz-key">B</span>The heap was resized; brief startup pause only</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-2" value="C"><span class="quiz-key">C</span>All application threads froze for 4.8 seconds — orders queued, health checks missed</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-2" value="D"><span class="quiz-key">D</span>Heap was successfully reclaimed; no issue</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="A">
+                <div class="quiz-q-text">3. Thread A holds OrderBook lock and waits for PositionCache. Thread B holds PositionCache and waits for OrderBook. What is this?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-java-3" value="A"><span class="quiz-key">A</span>A deadlock — both threads waiting on each other, neither can proceed</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-3" value="B"><span class="quiz-key">B</span>High CPU contention on a shared resource</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-3" value="C"><span class="quiz-key">C</span>Normal synchronized block coordination</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-3" value="D"><span class="quiz-key">D</span>An OutOfMemoryError in the thread pool</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="D">
+                <div class="quiz-q-text">4. A service crashes with "OutOfMemoryError: Direct buffer memory". What is the most likely culprit?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-java-4" value="A"><span class="quiz-key">A</span>A HashMap growing without bound in heap</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-4" value="B"><span class="quiz-key">B</span>Too many classes loaded at runtime</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-4" value="C"><span class="quiz-key">C</span>A StackOverflowError from deep recursion</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-4" value="D"><span class="quiz-key">D</span>A Kafka consumer or Netty FIX engine not releasing NIO ByteBuffers</label>
+                </div>
+              </div>
+              <div class="quiz-q" data-answer="B">
+                <div class="quiz-q-text">5. Which command captures a thread dump from a running JVM without restarting the process?</div>
+                <div class="quiz-opts">
+                  <label class="quiz-opt"><input type="radio" name="q-java-5" value="A"><span class="quiz-key">A</span>kill -9 &lt;pid&gt;</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-5" value="B"><span class="quiz-key">B</span>kill -3 &lt;pid&gt; or jstack &lt;pid&gt;</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-5" value="C"><span class="quiz-key">C</span>jmap -dump:format=b &lt;pid&gt;</label>
+                  <label class="quiz-opt"><input type="radio" name="q-java-5" value="D"><span class="quiz-key">D</span>jcmd &lt;pid&gt; GC.heap_info</label>
+                </div>
+              </div>
+            </div>
+            <div class="quiz-actions">
+              <button class="quiz-submit-btn" onclick="checkQuiz('java')">Check Answers</button>
+              <span class="quiz-score-lbl" id="score-java"></span>
+              <button class="quiz-reset-btn" id="reset-java" onclick="resetQuiz('java')">Try Again</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-nav">
+        <button class="nav-btn" id="prev-java" onclick="nav('java',-1)" disabled>← Prev</button>
+        <div class="dots" id="dots-java"></div>
+        <button class="nav-btn" id="next-java" onclick="nav('java',1)">Next →</button>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -4950,7 +5611,7 @@ const COUNTS = {
   fix: 23, kafka: 9, k8s: 10, marketdata: 9,
   sql: 8, airflow: 9, linux: 7, python: 9,
   aws: 6, networking: 5, git: 5, support: 8, interview: 7,
-  darkpool: 9
+  darkpool: 9, monitoring: 9, java: 8
 };
 
 // ── Init ──

@@ -22,7 +22,7 @@ import sys
 # ---- SSH Configuration -------------------------------------------------------
 SSH_CONFIG = {
     "hostname": "127.0.0.1",
-    "port":     2222,        # drw VM: VirtualBox NAT Rule 1 (127.0.0.1:2222 -> :22)
+    "port":     2222,        # hft VM: VirtualBox NAT Rule 1 (127.0.0.1:2222 -> :22)
     "username": "acm",
     "password": "11134",
     # "key_filename": os.path.expanduser("~/.ssh/id_rsa"),
