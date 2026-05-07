@@ -2675,19 +2675,19 @@ cursor.<span class="fn">execute</span>(<span class="str">"""
           <span class="deck-icon">🐍</span>
           <div>
             <div class="deck-label">Python &amp; Bash</div>
-            <div class="deck-desc">Log monitoring, awk parsing, process watchdog, REST, FIX protocol, Kafka lag, OOP patterns</div>
+            <div class="deck-desc">Scripting basics, awk parsing, process watchdog, REST, FIX, Kafka lag, OOP patterns, pandas/numpy researcher triage</div>
           </div>
         </div>
         <div class="deck-meta">
           <div class="kbd-hint"><kbd>←</kbd><kbd>→</kbd> navigate</div>
-          <div class="deck-counter" id="ctr-python"><strong>1</strong> / 8</div>
+          <div class="deck-counter" id="ctr-python"><strong>1</strong> / 11</div>
         </div>
       </div>
       <div class="slides-wrap" id="slides-python">
 
         <!-- ── PY1: P-01 Log Monitor Bash Script ── -->
         <div class="slide active">
-          <div class="sl-num">PYTHON &amp; BASH · SLIDE 1 / 8</div>
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 1 / 11</div>
           <div class="sl-title">P-01 — Log Monitor Bash Script</div>
           <div class="sl-sub">Tail a live log, detect error patterns, alert on rate — the daily on-call toolkit</div>
           <div class="sl-rule"></div>
@@ -2728,7 +2728,7 @@ recent_errors() {
 
         <!-- ── PY2: P-02 awk Log Parsing ── -->
         <div class="slide">
-          <div class="sl-num">PYTHON &amp; BASH · SLIDE 2 / 8</div>
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 2 / 11</div>
           <div class="sl-title">P-02 — awk Log Parsing</div>
           <div class="sl-sub">Extract, aggregate, and report from structured logs — single-pass, no Python overhead</div>
           <div class="sl-rule"></div>
@@ -2763,7 +2763,7 @@ END { for (t in vol) print t, vol[t] }'</span> fills.csv | <span class="fn">colu
 
         <!-- ── PY3: P-03 Python Process Watchdog ── -->
         <div class="slide">
-          <div class="sl-num">PYTHON &amp; BASH · SLIDE 3 / 8</div>
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 3 / 11</div>
           <div class="sl-title">P-03 — Python Process Watchdog</div>
           <div class="sl-sub">Probe a critical process via its PID file and restart it before the trading desk notices</div>
           <div class="sl-rule"></div>
@@ -2805,7 +2805,7 @@ restarts = <span class="nm">0</span>
 
         <!-- ── PY4: P-04 REST API Client ── -->
         <div class="slide">
-          <div class="sl-num">PYTHON &amp; BASH · SLIDE 4 / 8</div>
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 4 / 11</div>
           <div class="sl-title">P-04 — REST API Client</div>
           <div class="sl-sub">Query internal risk / PnL APIs, handle retries, and surface data-quality issues programmatically</div>
           <div class="sl-rule"></div>
@@ -2845,7 +2845,7 @@ positions = <span class="fn">get_with_retry</span>(
 
         <!-- ── PY5: P-05 FIX Message Parser ── -->
         <div class="slide">
-          <div class="sl-num">PYTHON &amp; BASH · SLIDE 5 / 8</div>
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 5 / 11</div>
           <div class="sl-title">P-05 — FIX Message Parser</div>
           <div class="sl-sub">Decode FIX 4.4 fields, detect SeqNum gaps, and identify ResendRequest / GapFill flows</div>
           <div class="sl-rule"></div>
@@ -2883,7 +2883,7 @@ MSG_TYPES = {<span class="str">'D'</span>: <span class="str">'NewOrderSingle'</s
 
         <!-- ── PY6: P-06 Kafka Lag Monitor ── -->
         <div class="slide">
-          <div class="sl-num">PYTHON &amp; BASH · SLIDE 6 / 8</div>
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 6 / 11</div>
           <div class="sl-title">P-06 — Kafka Lag Monitor</div>
           <div class="sl-sub">Poll consumer group lag, alert on backlog, identify which partition is stuck</div>
           <div class="sl-rule"></div>
@@ -2925,7 +2925,7 @@ BOOTSTRAP = <span class="str">"broker-0:9092"</span>
 
         <!-- ── PY7: P-07 OOP Strategy Pattern ── -->
         <div class="slide">
-          <div class="sl-num">PYTHON &amp; BASH · SLIDE 7 / 8</div>
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 7 / 11</div>
           <div class="sl-title">P-07 — OOP: Strategy Pattern</div>
           <div class="sl-sub">Swap pricing algorithms at runtime without touching caller code — canonical trading-desk pattern</div>
           <div class="sl-rule"></div>
@@ -2970,7 +2970,7 @@ BOOTSTRAP = <span class="str">"broker-0:9092"</span>
 
         <!-- ── PY8: P-08 OOP Observer Pattern ── -->
         <div class="slide">
-          <div class="sl-num">PYTHON &amp; BASH · SLIDE 8 / 8</div>
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 8 / 11</div>
           <div class="sl-title">P-08 — OOP: Observer Pattern</div>
           <div class="sl-sub">Fan out market data ticks to multiple subscribers — decouple the feed from every consumer</div>
           <div class="sl-rule"></div>
@@ -3012,10 +3012,118 @@ BOOTSTRAP = <span class="str">"broker-0:9092"</span>
           <div class="warn"><strong>Isolate observer failures.</strong> The <code>try/except</code> inside <code>publish()</code> is intentional: a broken HDF5Writer (disk full) must not prevent RiskMonitor from receiving ticks. Never let one subscriber take down the bus.</div>
         </div>
 
+        <!-- ── PY9: Python Scripting Basics ── -->
+        <div class="slide">
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 9 / 11</div>
+          <div class="sl-title">Python Scripting Basics</div>
+          <div class="sl-sub">Core constructs for writing support scripts — types, control flow, file I/O, error handling</div>
+          <div class="sl-rule"></div>
+          <pre><span class="cm"># ── Types ─────────────────────────────────────────────────────────────────</span>
+n = <span class="nm">42</span>;  pi = <span class="nm">3.14</span>;  s = <span class="str">"tick"</span>;  flag = <span class="kw">True</span>
+lst = [<span class="nm">1</span>, <span class="nm">2</span>, <span class="nm">3</span>]              <span class="cm"># list  — ordered, mutable</span>
+dct = {<span class="str">"sym"</span>: <span class="str">"AAPL"</span>, <span class="str">"px"</span>: <span class="nm">142.5</span>}  <span class="cm"># dict  — key→value lookup</span>
+tup = (<span class="nm">1</span>, <span class="nm">2</span>)                 <span class="cm"># tuple — ordered, immutable</span>
+lst.<span class="fn">append</span>(<span class="nm">4</span>);  dct[<span class="str">"qty"</span>] = <span class="nm">100</span>
+
+<span class="cm"># ── Control flow ─────────────────────────────────────────────────────────</span>
+<span class="kw">for</span> sym <span class="kw">in</span> [<span class="str">"AAPL"</span>, <span class="str">"GOOG"</span>, <span class="str">"MSFT"</span>]:
+    <span class="kw">if</span> sym == <span class="str">"AAPL"</span>:
+        <span class="fn">print</span>(<span class="str">f"Apple: {sym}"</span>)    <span class="cm"># f-string: embed any expression in { }</span>
+    <span class="kw">elif</span> sym == <span class="str">"GOOG"</span>:
+        <span class="kw">continue</span>               <span class="cm"># skip to next iteration</span>
+    <span class="kw">else</span>:
+        <span class="kw">break</span>                  <span class="cm"># stop loop entirely</span>
+
+evens = [x <span class="kw">for</span> x <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">10</span>) <span class="kw">if</span> x % <span class="nm">2</span> == <span class="nm">0</span>]  <span class="cm"># list comprehension</span>
+
+<span class="cm"># ── Functions ─────────────────────────────────────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">vwap</span>(prices: list, volumes: list, decimals: int = <span class="nm">4</span>) -> float:
+    result = <span class="fn">sum</span>(p*v <span class="kw">for</span> p,v <span class="kw">in</span> <span class="fn">zip</span>(prices, volumes)) / <span class="fn">sum</span>(volumes)
+    <span class="kw">return</span> <span class="fn">round</span>(result, decimals)   <span class="cm"># default arg: decimals=4</span>
+
+<span class="cm"># ── File I/O ──────────────────────────────────────────────────────────────</span>
+<span class="kw">with</span> <span class="fn">open</span>(<span class="str">"/var/log/oms.log"</span>) <span class="kw">as</span> f:      <span class="cm"># auto-close even on exception</span>
+    errors = [ln.<span class="fn">rstrip</span>() <span class="kw">for</span> ln <span class="kw">in</span> f <span class="kw">if</span> <span class="str">"ERROR"</span> <span class="kw">in</span> ln]
+
+<span class="kw">import</span> json
+<span class="kw">with</span> <span class="fn">open</span>(<span class="str">"/tmp/report.json"</span>, <span class="str">"w"</span>) <span class="kw">as</span> f:
+    json.<span class="fn">dump</span>({<span class="str">"status"</span>: <span class="str">"ok"</span>, <span class="str">"errors"</span>: <span class="fn">len</span>(errors)}, f, indent=<span class="nm">2</span>)
+
+<span class="cm"># ── Error handling ────────────────────────────────────────────────────────</span>
+<span class="kw">import</span> os
+<span class="kw">try</span>:
+    val = <span class="fn">int</span>(os.environ[<span class="str">"RETRY_COUNT"</span>])
+<span class="kw">except</span> KeyError:
+    <span class="fn">print</span>(<span class="str">"RETRY_COUNT not set — using default"</span>); val = <span class="nm">3</span>
+<span class="kw">except</span> ValueError <span class="kw">as</span> e:
+    <span class="fn">print</span>(<span class="str">f"Bad value: {e}"</span>); val = <span class="nm">3</span>
+<span class="kw">finally</span>:
+    <span class="fn">print</span>(<span class="str">f"retry_count={val}"</span>)     <span class="cm"># always runs</span>
+
+<span class="cm"># ── Key stdlib imports for support scripts ────────────────────────────────</span>
+<span class="kw">import</span> os, sys, json, subprocess, logging
+<span class="kw">from</span> pathlib <span class="kw">import</span> Path
+<span class="kw">from</span> datetime <span class="kw">import</span> datetime</pre>
+          <div class="tip"><strong>f-strings:</strong> <code>f"px={px:.4f} sym={sym!r}"</code> — <code>.4f</code> = 4 decimal places, <code>!r</code> = repr (adds quotes). Use <code>logging.info("msg %s", var)</code> instead of print in production scripts — it's level-filtered and timestamp-aware.</div>
+        </div>
+
+        <!-- ── PY10: Pandas/NumPy Researcher Triage ── -->
+        <div class="slide">
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 10 / 11</div>
+          <div class="sl-title">Pandas &amp; NumPy — Researcher Triage</div>
+          <div class="sl-sub">Debug researcher scripts: inspect DataFrames, diagnose errors, chase memory leaks and slow loops</div>
+          <div class="sl-rule"></div>
+          <pre><span class="cm"># ── Check environment before running anything ─────────────────────────────</span>
+python3 -c <span class="str">"import pandas as pd, numpy as np; print(pd.__version__, np.__version__)"</span>
+pip show pandas numpy scipy h5py          <span class="cm"># version + install path</span>
+python3 -W all researcher.py             <span class="cm"># surface all hidden warnings</span>
+python3 -m cProfile -s cumtime researcher.py <span class="str">2</span>&amp;1 | head -<span class="nm">20</span>  <span class="cm"># find slow functions</span>
+
+<span class="cm"># ── Inspect a DataFrame (paste into their script or ipython) ─────────────</span>
+<span class="kw">import</span> pandas <span class="kw">as</span> pd, numpy <span class="kw">as</span> np
+df.<span class="fn">shape</span>                          <span class="cm"># (rows, cols) — check first</span>
+df.<span class="fn">dtypes</span>                         <span class="cm"># are numbers float64 or object (stored as string)?</span>
+df.<span class="fn">info</span>()                          <span class="cm"># non-null counts + dtypes + memory in one shot</span>
+df.<span class="fn">describe</span>()                      <span class="cm"># mean, std, min, quartiles, max</span>
+df.<span class="fn">head</span>(<span class="nm">3</span>);  df.<span class="fn">tail</span>(<span class="nm">3</span>)           <span class="cm"># sanity-check first and last rows</span>
+df.columns.<span class="fn">tolist</span>()               <span class="cm"># exact column names — typos → KeyError</span>
+
+<span class="cm"># ── Find and handle nulls ─────────────────────────────────────────────────</span>
+df.<span class="fn">isna</span>().<span class="fn">sum</span>()                    <span class="cm"># null count per column</span>
+df[df[<span class="str">"price"</span>].<span class="fn">isna</span>()]             <span class="cm"># show rows with null price</span>
+df.<span class="fn">dropna</span>(subset=[<span class="str">"price"</span>])        <span class="cm"># drop those rows</span>
+df[<span class="str">"price"</span>].<span class="fn">fillna</span>(<span class="nm">0</span>, inplace=<span class="kw">True</span>)  <span class="cm"># fill with zero</span>
+
+<span class="cm"># ── Memory — researcher loaded too much data ──────────────────────────────</span>
+df.<span class="fn">memory_usage</span>(deep=<span class="kw">True</span>).<span class="fn">sum</span>() / <span class="nm">1e9</span>      <span class="cm"># total GB</span>
+df[<span class="str">"symbol"</span>].<span class="fn">astype</span>(<span class="str">"category"</span>)              <span class="cm"># string → category: saves 60-90%</span>
+df.<span class="fn">select_dtypes</span>(<span class="str">"float64"</span>).<span class="fn">astype</span>(<span class="str">"float32"</span>)  <span class="cm"># halve float memory</span>
+pd.<span class="fn">read_csv</span>(<span class="str">"ticks.csv"</span>, usecols=[<span class="str">"ts"</span>, <span class="str">"price"</span>], chunksize=<span class="nm">100_000</span>)
+
+<span class="cm"># ── Common errors and fixes ───────────────────────────────────────────────</span>
+<span class="cm"># KeyError: 'price'          → df.columns.tolist() — check exact name/case</span>
+<span class="cm"># SettingWithCopyWarning      → replace df[mask][col]=val with df.loc[mask,col]=val</span>
+<span class="cm"># ValueError: x must be 1D   → passed DataFrame; use df["col"] for a Series</span>
+<span class="cm"># MemoryError                 → check memory_usage above, chunk the file</span>
+<span class="cm"># TypeError: ufunc 'add' …   → mixing dtypes; cast: df["col"].astype(float)</span>
+
+<span class="cm"># ── Performance: iterrows is ~1000× slower than vectorized ───────────────</span>
+<span class="cm"># ✗ Bad:  for i, row in df.iterrows(): df.at[i,"val"] = row["price"] * 2</span>
+df[<span class="str">"val"</span>] = df[<span class="str">"price"</span>] * <span class="nm">2</span>                     <span class="cm"># ✓ vectorized — C speed</span>
+df[<span class="str">"side"</span>] = np.<span class="fn">where</span>(df[<span class="str">"qty"</span>] > <span class="nm">0</span>, <span class="str">"buy"</span>, <span class="str">"sell"</span>)
+
+<span class="cm"># ── NumPy array quick debug ───────────────────────────────────────────────</span>
+arr.<span class="fn">shape</span>; arr.<span class="fn">dtype</span>; arr.<span class="fn">ndim</span>
+np.<span class="fn">isnan</span>(arr).<span class="fn">any</span>()              <span class="cm"># any NaN anywhere?</span>
+np.<span class="fn">where</span>(np.<span class="fn">isnan</span>(arr))          <span class="cm"># which indices are NaN</span>
+np.<span class="fn">isinf</span>(arr).<span class="fn">any</span>()              <span class="cm"># any +/-inf? (division by zero upstream)</span></pre>
+          <div class="warn"><strong>SettingWithCopyWarning</strong> is the #1 researcher complaint. <code>df[condition][col] = val</code> silently writes to a copy — the original is unchanged and the researcher wonders why their fix didn't work. Fix: always use <code>df.loc[condition, col] = val</code>. On pandas 2.0+ add <code>pd.options.mode.copy_on_write = True</code> to turn the warning into a hard error so it's caught immediately.</div>
+        </div>
+
 
         <!-- ── QUIZ SLIDE ── -->
         <div class="slide">
-          <div class="sl-num">PYTHON & BASH · SLIDE 9 / 9</div>
+          <div class="sl-num">PYTHON &amp; BASH · SLIDE 11 / 11</div>
           <div class="sl-title">Knowledge Check</div>
           <div class="sl-sub">Python & Bash — 5 questions &nbsp;·&nbsp; Select the best answer then click Check</div>
           <div class="sl-rule"></div>
@@ -5609,7 +5717,7 @@ const state = {};   // { deckId: currentIndex }
 // ── Deck counts ──
 const COUNTS = {
   fix: 23, kafka: 9, k8s: 10, marketdata: 9,
-  sql: 8, airflow: 9, linux: 7, python: 9,
+  sql: 8, airflow: 9, linux: 7, python: 11,
   aws: 6, networking: 5, git: 5, support: 8, interview: 7,
   darkpool: 9, monitoring: 9, java: 8
 };
