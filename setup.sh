@@ -3,7 +3,7 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
-SCENARIOS_DIR="$REPO_DIR/scenarios"
+SCENARIOS_DIR="$REPO_DIR/scenarios/cli"
 
 # ── Python version check ─────────────────────────────────────────────────────
 python_bin=""

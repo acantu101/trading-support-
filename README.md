@@ -28,21 +28,23 @@ A self-contained Linux lab environment that simulates real trading infrastructur
 | File | Purpose |
 |------|---------|
 | `challenge-lab.html` | Interactive browser guide — 60+ challenges with hints, solutions, and progress tracking |
-| `scenarios/lab.py` | Unified entry point — top-level menu across all 13 challenge categories |
-| `scenarios/common.py` | Shared utilities (colors, PID management, teardown helpers) |
-| `scenarios/lab_linux.py` | Linux & Systems scenarios (L-01 to L-10) |
-| `scenarios/lab_networking.py` | Networking scenarios (N-01 to N-05) |
-| `scenarios/lab_fix.py` | FIX Protocol scenarios (FX-01 to FX-06) |
-| `scenarios/lab_kafka.py` | Kafka scenarios (K-01 to K-12) |
-| `scenarios/lab_k8s.py` | Kubernetes, ArgoCD & Argo Workflows (K8-01 to K8-09) |
-| `scenarios/lab_sql.py` | SQL & Databases scenarios (S-01 to S-08) |
-| `scenarios/lab_git.py` | Git scenarios (G-01 to G-05) |
-| `scenarios/lab_airflow.py` | Airflow scenarios (AF-01 to AF-10) |
-| `scenarios/lab_python.py` | Python & Bash scripting + OOP scenarios (P-01 to P-08) |
-| `scenarios/lab_aws.py` | AWS & Cloud scenarios (A-01 to A-05) |
-| `scenarios/lab_java.py` | Java / JVM scenarios (J-01 to J-04) |
-| `scenarios/lab_marketdata.py` | Market Data & Protocols scenarios (MD-01 to MD-14) |
-| `scenarios/lab_monitoring.py` | Monitoring & Observability scenarios (M-01 to M-05) |
+| `scenarios/cli/lab.py` | Unified CLI entry point — top-level menu across all 13 challenge categories |
+| `scenarios/cli/common.py` | Shared utilities (colors, PID management, teardown helpers) |
+| `scenarios/cli/lab_linux.py` | Linux & Systems scenarios (L-01 to L-10) |
+| `scenarios/cli/lab_networking.py` | Networking scenarios (N-01 to N-05) |
+| `scenarios/cli/lab_fix.py` | FIX Protocol scenarios (FX-01 to FX-06) |
+| `scenarios/cli/lab_kafka.py` | Kafka scenarios (K-01 to K-12) |
+| `scenarios/cli/lab_k8s.py` | Kubernetes, ArgoCD & Argo Workflows (K8-01 to K8-09) |
+| `scenarios/cli/lab_sql.py` | SQL & Databases scenarios (S-01 to S-08) |
+| `scenarios/cli/lab_git.py` | Git scenarios (G-01 to G-05) |
+| `scenarios/cli/lab_airflow.py` | Airflow scenarios (AF-01 to AF-10) |
+| `scenarios/cli/lab_python.py` | Python & Bash scripting + OOP scenarios (P-01 to P-08) |
+| `scenarios/cli/lab_aws.py` | AWS & Cloud scenarios (A-01 to A-05) |
+| `scenarios/cli/lab_java.py` | Java / JVM scenarios (J-01 to J-04) |
+| `scenarios/cli/lab_marketdata.py` | Market Data & Protocols scenarios (MD-01 to MD-14) |
+| `scenarios/cli/lab_monitoring.py` | Monitoring & Observability scenarios (M-01 to M-05) |
+| `scenarios/cli/scripts/` | Reference solution scripts (fix, kafka, linux, networking) |
+| `scenarios/html/` | Bash VM scenarios for the HTML lab (setup/verify/reset per category) |
 
 ---
 
@@ -76,7 +78,7 @@ cd trading-support
 ## Quick Start
 
 ```bash
-cd scenarios
+cd scenarios/cli
 
 # Launch the unified menu — choose a category then a scenario
 python3 lab.py
@@ -129,9 +131,10 @@ The lab has **12 categories** with **60+ challenges**, each with a realistic sce
 
 ## Lab Scripts
 
-### Unified Entry: `lab.py`
+### Unified Entry: `scenarios/cli/lab.py`
 
 ```
+cd scenarios/cli
 python3 lab.py
 ```
 
@@ -158,7 +161,7 @@ python3 lab.py
 
 ### Per-Category Usage
 
-Every lab script accepts the same flags:
+Every lab script accepts the same flags (run from `scenarios/cli/`):
 
 ```bash
 python3 lab_<name>.py                  # interactive scenario menu
@@ -368,7 +371,58 @@ The `runbooks/` directory contains reference documentation for each domain. Read
 
 ## Directory Structure
 
-Each lab creates an isolated directory under `/tmp/`:
+### Repo layout
+
+```
+trading-support/
+├── challenge-lab.html          ← HTML study lab (open in browser)
+├── lab.css                     ← Styles for the HTML lab
+├── data/scenarios.js           ← Scenario metadata for the HTML lab
+├── terminal-server.py          ← WebSocket server powering HTML lab terminal
+├── setup.sh                    ← Bootstrap script for the CLI lab on a Linux VM
+├── requirements.txt
+├── README.md
+│
+├── scenarios/
+│   ├── cli/                    ← Python CLI lab (runs on your Linux VM)
+│   │   ├── lab.py              ← Unified entry point (top-level menu)
+│   │   ├── common.py           ← Shared utilities
+│   │   ├── lab_linux.py
+│   │   ├── lab_networking.py
+│   │   ├── lab_fix.py
+│   │   ├── lab_kafka.py
+│   │   ├── lab_k8s.py
+│   │   ├── lab_sql.py
+│   │   ├── lab_git.py
+│   │   ├── lab_airflow.py
+│   │   ├── lab_python.py
+│   │   ├── lab_aws.py
+│   │   ├── lab_java.py
+│   │   ├── lab_marketdata.py
+│   │   ├── lab_monitoring.py
+│   │   └── scripts/            ← Reference solution scripts per domain
+│   │       ├── fix/            ← decode_message.py, parse_log.sh, …
+│   │       ├── kafka/          ← lag_monitor.py
+│   │       ├── linux/          ← process_watchdog.py, log_monitor.sh
+│   │       └── networking/     ← port_check.sh
+│   │
+│   └── html/                   ← Bash VM scenarios for the HTML lab
+│       ├── deploy.sh           ← Copy scenarios to VM (run from Git Bash)
+│       ├── run.sh              ← Start a scenario interactively on the VM
+│       ├── _lib/common.sh      ← Shared bash helpers
+│       └── <category>/         ← One folder per category
+│           ├── setup.sh        ← Create the broken environment
+│           ├── verify.sh       ← Check if challenge is solved
+│           └── reset.sh        ← Tear it down cleanly
+│
+├── runbooks/                   ← Reference markdown docs per domain
+└── scripts/                    ← Repo dev tools (not part of the lab)
+    ├── triage.sh               ← Manage GitHub issues via gh CLI
+    ├── add_quizzes.py          ← Inject quiz slides into challenge-lab.html
+    └── export_pptx.py          ← Export HTML decks to .pptx
+```
+
+### Runtime layout (CLI lab — created under `/tmp/` when scenarios run)
 
 ```
 /tmp/
@@ -387,11 +441,11 @@ Each lab creates an isolated directory under `/tmp/`:
 └── lab_monitoring/    ← Monitoring lab
 ```
 
-Each directory contains:
+Each runtime directory contains:
 ```
 <lab_root>/
 ├── logs/        process and app logs
-├── scripts/     solution scripts to study and run
+├── scripts/     solution scripts deployed at runtime
 ├── data/        snapshots, configs, sample files
 ├── config/      app and service config files
 └── run/         *.pid files for process tracking
@@ -501,10 +555,10 @@ Each lab script cleans up after itself:
 
 ```bash
 # Tear down one lab
-python3 scenarios/lab_linux.py --teardown
+python3 scenarios/cli/lab_linux.py --teardown
 
 # Tear down all labs at once
-python3 scenarios/lab.py --teardown
+python3 scenarios/cli/lab.py --teardown
 ```
 
 This sends `SIGTERM` then `SIGKILL` to all tracked processes, sweeps for any strays by name, and removes the entire lab directory tree under `/tmp/`.
