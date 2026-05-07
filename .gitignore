@@ -2,3 +2,7 @@ issues.gitignore/
 *.tar.gz
 __pycache__/
 *.pyc
+*.pptx
+*.zip
+pptx_export/
+runbooks/slides.gitignore/

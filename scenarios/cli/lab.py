@@ -91,7 +91,7 @@ CATEGORIES = {
     },
     "incident": {
         "module": "lab_incident",
-        "label": "I   Trading Incident (DRW-style cascade)",
+        "label": "I   Trading Incident (HFT-style cascade)",
         "aliases": ["i"],
     },
 }
